@@ -26,6 +26,10 @@ function roccurve(ascorevec, labels)
         end
     end
     
+    # ensure zeros
+    recvec[end] = 0.0
+    fprvec[end] = 0.0
+    
     # sort them
     isort = sortperm(fprvec)
     recvec = recvec[isort]
@@ -37,10 +41,6 @@ function roccurve(ascorevec, labels)
             recvec[i] = recvec[i-1]
         end
     end
-    
-    # ensure zeros
-    recvec[1] = 0.0
-    fprvec[1] = 0.0
     
     return recvec, fprvec
 end
