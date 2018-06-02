@@ -1,4 +1,3 @@
-push!(LOAD_PATH, "../src")
 using EvalCurves
 
 # true labels
