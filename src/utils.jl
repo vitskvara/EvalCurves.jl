@@ -80,5 +80,4 @@ function plotroc(args...)
         plot(arg[1], arg[2], label = arg[3], lw = 2)
     end
     legend()
-    return f
 end
