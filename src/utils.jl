@@ -67,12 +67,18 @@ end
 Plot roc curves, where args is an iterable of triples (fprate, tprate, label).
 """
 function plotroc(args...)
+	f = figure()
+	xlim([0,1])
+	ylim([0,1])
+	xlabel("false positive rate")
+	ylabel("true positive rate")
+	title("ROC")
+
     # plot the diagonal line
-    p = plot(linspace(0,1,100), linspace(0,1,100), c = :gray, alpha = 0.5, xlim = [0,1],
-    ylim = [0,1], label = "", xlabel = "false positive rate", ylabel = "true positive rate",
-    title = "ROC")
+    plot(linspace(0,1,100), linspace(0,1,100), c = "gray", alpha = 0.5, label = "")
     for arg in args
-        plot!(arg[1], arg[2], label = arg[3], lw = 2)
+        plot(arg[1], arg[2], label = arg[3], lw = 2)
     end
-    return p
+    legend()
+    return f
 end

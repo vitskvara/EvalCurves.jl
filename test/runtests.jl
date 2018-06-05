@@ -15,5 +15,4 @@ N = size(labels,1)
 	auroc = EvalCurves.auc(fprvec, tprvec)
 	@test auroc==0.875
 	display(EvalCurves.plotroc([(fprvec, tprvec, "test")]...))
-	Plots.gui()
 end

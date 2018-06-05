@@ -1,6 +1,7 @@
 module EvalCurves
-using Plots
-plotly()
+#using Plots
+#plotly()
+using PyPlot
 
 const Float = Float64
 
