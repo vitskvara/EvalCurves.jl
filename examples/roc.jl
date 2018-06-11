@@ -17,7 +17,7 @@ auroc = EvalCurves.auc(fprvec, tprvec)
 println("AUROC: $(auroc)")
 
 # roc plot
-EvalCurves.plotroc([(fprvec, tprvec, "test")]...)
+EvalCurves.plotroc((fprvec, tprvec, "test"))
 show()
 
 
