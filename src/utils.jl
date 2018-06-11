@@ -1,7 +1,8 @@
 """
     roccurve(ascorevec, labels)
 
-Returns the roc curve data computed from anomaly score and labels vectors.
+Returns the roc curve data - true positive rate and false positive rate,
+computed from anomaly score and labels vectors.
 """
 function roccurve(ascorevec, labels)
     N = size(labels,1)
@@ -10,42 +11,42 @@ function roccurve(ascorevec, labels)
         warn("Anomaly score is NaN, check your inputs!")
     end
     fprvec = Array{Float,1}(N+2)
-    recvec = Array{Float,1}(N+2)
+    tprvec = Array{Float,1}(N+2)
     p = sum(labels)
     n = N - p
     fpr = 1.0
-    rec = 1.0
+    tpr = 1.0
     fprvec[1] = fpr # fp/n
-    recvec[1] = rec # tp/p
+    tprvec[1] = tpr # tp/p
     sortidx = sortperm(ascorevec)
     for i in 2:(N+1)
-        (labels[sortidx[i-1]] == 0)? (fpr = fpr - 1/n) : (rec = rec -1/p)
-        if (fpr <= rec)
+        (labels[sortidx[i-1]] == 0)? (fpr = fpr - 1/n) : (tpr = tpr -1/p)
+        if (fpr <= tpr)
             fprvec[i] = fpr
-            recvec[i] = rec
+            tprvec[i] = tpr
         else
             fprvec[i] = 1-fpr
-            recvec[i] = 1-rec
+            tprvec[i] = 1-tpr
         end
     end
     
     # ensure zeros
-    recvec[end] = 0.0
+    tprvec[end] = 0.0
     fprvec[end] = 0.0
     
     # sort them
     isort = sortperm(fprvec)
-    recvec = recvec[isort]
+    tprvec = tprvec[isort]
     fprvec = fprvec[isort]
     
     # avoid regression
     for i in 2:(N+2)
-        if recvec[i] < recvec[i-1]
-            recvec[i] = recvec[i-1]
+        if tprvec[i] < tprvec[i-1]
+            tprvec[i] = tprvec[i-1]
         end
     end
     
-    return recvec, fprvec
+    return round.(fprvec,10), round.(tprvec,10)
 end
 
 """
@@ -64,7 +65,7 @@ end
 """
     plotroc(args...)
 
-Plot roc curves, where args is an iterable of triples (fprate, tprate, label).
+Plot roc curves, where args is an iterable of triples (tprate, fprate, label).
 """
 function plotroc(args...)
 	f = figure()
