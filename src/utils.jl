@@ -50,16 +50,30 @@ function roccurve(ascorevec, labels)
 end
 
 """
-    auc(x,y)
+    auc(x,y, [weights])
 
 Computes the are under curve (x,y).
 """
-function auc(x,y)
+function auc(x,y, weights = "same")
     # compute the increments
     dx = x[2:end] - x[1:end-1]
     dy = y[2:end] - y[1:end-1]
+
+    if weights == "same"
+        a = y[1:end-1] + dy/2
+        b = dx
+    elseif weights == "1/x"
+        x = (x[2:end] + x[1:end-1])/2 # this is used for symmetric case
+        # comment the line above and change the bounds on lina 72 and 74
+        inz = x.!=0 # nonzero indices
+        w = 1./x[inz]
+        # w = w/sum(w) # this is numerically unstable
+        a = (y[1:end-1] + dy/2)[inz] # (y[1:end-1] + dy/2)[inz[2:end]]
+        a = a.*w
+        b = dx[inz] # dx[inz[2:end]]
+    end
     
-    return dot(y[1:end-1],dx) + dot(dx,dy)/2
+    return dot(a,b)
 end
 
 """

@@ -15,4 +15,6 @@ N = size(labels,1)
 	@test auroc==0.875
 	EvalCurves.plotroc([(fprvec, tprvec, "test")]...)
 	show()
+	aauroc = EvalCurves.auc(fprvec, tprvec, "1/x")
+	@test round(aauroc, 4)==2.3524
 end
