@@ -17,5 +17,7 @@ Compute the are under ROC curve.
 
 Plot an ROC curve.
 
-`EvalCurves.plotroc([(fprvec, tprvec, "$(auroc)")]...)
-show()`
+```
+EvalCurves.plotroc([(fprvec, tprvec, "$(auroc)")]...)
+show()
+```
