@@ -1,5 +1,6 @@
 using EvalCurves
 using Base.Test
+import EvalCurves: auc, roccurve
 
 # create artificial data
 labels = [0; 0; 0; 0; 1]
@@ -18,10 +19,53 @@ N = size(labels,1)
 end
 
 
-@testset "degenerative case"
+@testset "degenerative case" begin
 	x = ones(3)
 	for y in [[1, 0, 1], [0, 1, 1], [1, 1, 0]]
 		fpr, tpr = roccurve(x, y)
 		@test all(fpr .== [0.0, 1.0]) && all(tpr .== [0.0, 1.0])
 		@test auc(fpr,tpr) == 0.5 
+	end
 end
+
+
+# using PyCall
+# @pyimport sklearn.metrics as sm
+
+# function compareskauc(labels, ascores)
+# 	pyfpr, pytpr, _ = sm.roc_curve(labels, ascores, drop_intermediate = false)
+# 	pyauc = sm.auc(pyfpr, pytpr)
+
+# 	fpr, tpr = EvalCurves.roccurve(ascores, labels)
+# 	auc = EvalCurves.auc(fpr,tpr)
+
+# 	@test pyauc ≈ auc
+# end
+
+# @testset "Scikit learn comparison" begin
+
+# 	# rand dataset
+# 	for i in 1:30
+# 		counts = rand(1:100, 2)
+# 		labels = vcat(zeros(counts[1]), ones(counts[2]))
+# 		ascores = rand(size(labels))
+
+# 		compareskauc(labels, ascores)
+# 	end
+
+# 	# Perfect dataset
+# 	labels = vcat(zeros(50), ones(50))
+# 	ascores = 1. .* labels
+# 	compareskauc(labels, ascores)
+
+# 	# No true positive dataset
+# 	labels = vcat(zeros(50), ones(50))
+# 	ascores = -1. .* labels .+ 1
+# 	compareskauc(labels, ascores)
+
+#   # exactly 0.5 AUC
+# 	labels = [0; 0; 1; 1]
+# 	ascores = [0; 1; 0; 1.]
+# 	compareskauc(labels, ascores)
+# end
+
