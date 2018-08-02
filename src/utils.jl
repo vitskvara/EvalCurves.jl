@@ -1,38 +1,45 @@
 """
-    roccurve(ascorevec, labels)
+    (fpr, tpr) = roccurve(score, labels)
 
-Returns the roc curve data - true positive rate and false positive rate,
-computed from anomaly score and labels vectors.
+
+    calculate false positive rate and true positive rate
+
 """
-function roccurve(ascorevec, labels)
+function roccurve(score::Vector, labels :: Vector)
     N = size(labels,1)
-    @assert N == size(ascorevec,1)
-    if isnan(ascorevec[1])
+    @assert N == size(score,1)
+    if isnan(score[1])
         warn("Anomaly score is NaN, check your inputs!")
     end
-    fprvec = Array{Float,1}(N+2)
-    tprvec = Array{Float,1}(N+2)
+    fprvec = zeros(N+2)
+    tprvec = zeros(N+2)
     p = sum(labels)
     n = N - p
     fpr = 1.0
     tpr = 1.0
     fprvec[1] = fpr # fp/n
     tprvec[1] = tpr # tp/p
-    sortidx = sortperm(ascorevec)
-    for i in 2:(N+1)
-        (labels[sortidx[i-1]] == 0)? (fpr = fpr - 1/n) : (tpr = tpr -1/p)
-        if (fpr <= tpr)
-            fprvec[i] = fpr
-            tprvec[i] = tpr
-        else
-            fprvec[i] = 1-fpr
-            tprvec[i] = 1-tpr
+    sortidx = sortperm(score)
+    sorted_labels = labels[sortidx]; 
+    sorted_scores = score[sortidx]; 
+    curveidx = 2
+    for i in 2:N
+        if sorted_labels[i-1] == 0 
+            fpr -=  1/n
+            if sorted_scores[i] != sorted_scores[i - 1]
+                fprvec[curveidx] = fpr
+                tprvec[curveidx] = tpr
+                curveidx += 1
+            end
+        else 
+            tpr -= 1/p
         end
     end
-    
+
     # ensure zeros
-    tprvec[end] = 0.0
-    fprvec[end] = 0.0
+    curveidx += (tprvec[curveidx] == 0 && fprvec[curveidx] == 0) ? 0 : 1
+    tprvec = tprvec[1:curveidx] 
+    fprvec = fprvec[1:curveidx] 
     
     # sort them
     isort = sortperm(fprvec)
@@ -40,7 +47,7 @@ function roccurve(ascorevec, labels)
     fprvec = fprvec[isort]
     
     # avoid regression
-    for i in 2:(N+2)
+    for i in 2:length(tprvec)
         if tprvec[i] < tprvec[i-1]
             tprvec[i] = tprvec[i-1]
         end
@@ -80,6 +87,8 @@ function auc(x,y, weights = "same")
     
     return dot(a,b)
 end
+
+auc(x::Tuple, weights = "same") = auc(x..., weights)
 
 """
     plotroc(args...)
