@@ -26,13 +26,13 @@ function roccurve(score::Vector, labels :: Vector)
     for i in 2:N
         if sorted_labels[i-1] == 0 
             fpr -=  1/n
-            if sorted_scores[i] != sorted_scores[i - 1]
-                fprvec[curveidx] = fpr
-                tprvec[curveidx] = tpr
-                curveidx += 1
-            end
         else 
             tpr -= 1/p
+        end
+        if sorted_scores[i] != sorted_scores[i - 1]
+            fprvec[curveidx] = fpr
+            tprvec[curveidx] = tpr
+            curveidx += 1
         end
     end
 
@@ -41,19 +41,39 @@ function roccurve(score::Vector, labels :: Vector)
     tprvec = tprvec[1:curveidx] 
     fprvec = fprvec[1:curveidx] 
     
+    # sort out numerical -0
+    fprvec = abs.(round.(fprvec,10))
+    tprvec = abs.(round.(tprvec,10))
+
     # sort them
-    isort = sortperm(fprvec)
-    tprvec = tprvec[isort]
-    fprvec = fprvec[isort]
+    isf = sortperm(fprvec)
+    tprvec = tprvec[isf]
+    fprvec = fprvec[isf]
+    ist = sortperm(tprvec)
+    tprvec = tprvec[ist]
+    fprvec = fprvec[ist]
     
-    # avoid regression
-    for i in 2:length(tprvec)
-        if tprvec[i] < tprvec[i-1]
-            tprvec[i] = tprvec[i-1]
-        end
-    end
-    
-    return round.(fprvec,10), round.(tprvec,10)
+    # this creates a semi-concave envelope of the roc curve
+    # experimental
+    #if concave
+    #    # this must be repeated at least N times
+    #    for n in 1:N
+    #        i = 1
+    #        maxi = length(fprvec)-1
+    #        while i <= maxi
+    #        #for i in 2:(length(fprvec)-1)
+    #            if (fprvec[i+1] == fprvec[i] && tprvec[i+1] > tprvec[i])
+    #                maxi = length(fprvec)
+    #                fprvec = fprvec[filter(x->x!=i,1:maxi)]
+    #                tprvec = tprvec[filter(x->x!=i,1:maxi)]
+    #                maxi = maxi - 2
+    #            end
+    #            i += 1
+    #        end
+    #    end
+    #end
+
+    return fprvec, tprvec
 end
 
 """
