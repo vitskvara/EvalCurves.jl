@@ -1,5 +1,5 @@
 module EvalCurves
-#using PyPlot
+using PyPlot
 const Float = Float64
 
 include("utils.jl")
