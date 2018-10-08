@@ -153,3 +153,159 @@ function plotroc(args...)
     end
     legend()
 end
+
+###########################################
+### basic binary classification metrics ###
+###########################################
+
+"""
+   binarize(x) 
+
+Transform x to binary labels if needed.
+"""
+function binarize(x::Vector)
+    vals = sort(unique(x))
+    (length(vals) == 2)? nothing : error("values of x are not binary!")
+    # if they are (false, true) or (0,1), do nothing
+    if vals == [0,1]
+        return x
+    # else relabel them
+    else
+        _x = copy(x)
+        _x[_x.==vals[1]] == 0
+        _x[_x.==vals[2]] == 1
+        return _x
+    end
+end
+
+true_positive_inds(y_true::Vector, y_pred::Vector) = 
+    (binarize(y_true).==1) .& (binarize(y_hat).==1)
+true_negative_inds(y_true::Vector, y_pred::Vector) = 
+    (binarize(y_true).==0) .& (binarize(y_hat).==0)
+false_positive_inds(y_true::Vector, y_pred::Vector) = 
+    (binarize(y_true).==0) .& (binarize(y_hat).==1)
+false_negative_inds(y_true::Vector, y_pred::Vector) = 
+    (binarize(y_true).==1) .& (binarize(y_hat).==0)
+
+true_positive(y_true, y_pred) = sum(true_positive_inds(y_true, y_pred))
+true_negative(y_true, y_pred) = sum(true_negative_inds(y_true, y_pred))
+false_positive(y_true, y_pred) = sum(false_positive_inds(y_true, y_pred))
+false_negative(y_true, y_pred) = sum(false_negative_inds(y_true, y_pred))
+
+"""
+    true_positive_rate(y_true, y_pred)
+
+Returns true positive rate (recall) = tp/(tp+fn).
+"""
+function true_positive_rate(y_true, y_pred)
+    tp = true_positive(y_true, y_pred)
+    return tp/(tp + false_negative(y_true, y_pred))
+end
+
+"""
+    true_negative_rate(y_true, y_pred)
+
+Returns true negative rate (specificity) = tn/(tn+fp).
+"""
+function true_negative_rate(y_true, y_pred)
+    tn = true_negative(y_true, y_pred)
+    return tn/(tn + false_positive(y_true, y_pred))
+end
+
+"""
+    false_positive_rate(y_true, y_pred)
+
+Returns false positive rate (fallout) = fp/(fp+tn).
+"""
+function false_positive_rate(y_true, y_pred)
+    fp = false_positive(y_true, y_pred)
+    return fp/(fp + true_negative(y_true, y_pred))
+end
+
+"""
+    false_negative_rate(y_true, y_pred)
+
+Returns false negative rate (miss rate) = fn/(fn+tp).
+"""
+function false_negative_rate(y_true, y_pred)
+    fn = false_negative(y_true, y_pred)
+    return fn/(fn + true_positive(y_true, y_pred))
+end
+
+"""
+    precision(y_true, y_pred)
+
+Returns precision = tp/(tp+fp).
+"""
+function precision(y_true, y_pred)
+    tp = true_positive(y_true, y_pred)
+    return tp/(tp + false_positive(y_true, y_pred))
+end
+
+"""
+    accuracy(y_true, y_pred)
+
+Returns accuracy = (tp+tn)/(p+n).
+"""
+accuracy(y_true, y_pred) = 
+    (true_positive(y_true, y_pred) + true_negative(y_true, y_pred))/length(y_true)
+
+"""
+    negative_predictive_value(y_true, y_pred)
+
+Returns negative predictive value = tn/(tn+fn).
+"""
+function negative_predictive_value(y_true, y_pred)
+    tn = true_negative(y_true, y_pred)
+    return tn/(tn+false_negative(y_true, y_pred))
+end
+
+"""
+   false_discovery_rate(y_true, y_pred)
+
+Returns false false discovery rate = fp/(fp+tp).
+"""
+function false_discovery_rate(y_true, y_pred)
+    fp = false_positive(y_true, y_pred)
+    return fp/(fp+true_positive(y_true, y_pred))
+end
+
+"""
+    false_omission_rate(y_true, y_pred)
+
+Returns false omission rate = fn/(fn+tn).
+"""
+function false_omission_rate(y_true, y_pred)
+    fn = false_negative(y_true, y_pred)
+    return fn/(fn+true_negative(y_true, y_pred))
+end
+
+"""
+    f1_score(y_true, y_pred)
+
+Returns F1 score = 2*tp/(2*tp+fp+fn).
+"""
+function f1_score(y_true, y_pred)
+    tp = true_positive(y_true, y_pred)
+    return 2*tp/(2*tp+false_positive(y_true, y_pred)+false_negative(y_true, y_pred))
+end
+
+"""
+    matthews_correlation_coefficient(y_true, y_pred)
+
+Returns Matthews correlation coefficient = (tp*tn - fp*fn)/sqrt((tp+fp)(tp+fn)(tn+fp)(tn+fn)).
+"""
+function matthews_correlation_coefficient(y_true, y_pred)
+    tp = true_positive(y_true, y_pred)
+    tn = true_negative(y_true, y_pred)
+    fp = false_positive(y_true, y_pred)
+    fn = false_negative(y_true, y_pred)
+    return (tp*tn + fp*fn)/sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))
+end
+
+"""
+    mcc(y_true, y_pred)
+
+Returns Matthews correlation coefficient = (tp*tn - fp*fn)/sqrt((tp+fp)(tp+fn)(tn+fp)(tn+fn)).
+"""
+mcc(y_true, y_pred) = matthews_correlation_coefficient(y_true, y_pred)
