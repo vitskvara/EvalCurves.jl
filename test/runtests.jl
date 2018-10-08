@@ -16,6 +16,13 @@ N = size(labels,1)
 	@test round(aauroc, 4)==1.0833
 	caauroc = EvalCurves.auc(fprvec, tprvec, "centered")
 	@test round(caauroc, 4)==1.3524
+	
+	# auc_at_p test
+	tpr = [0.0, 0.2, 0.2, 0.25, 0.25, 1.0, 1.0, 1.0, 1.0]
+	fpr = [0.0, 0.0, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
+	auroc = EvalCurves.auc(fpr, tpr)
+	@test ((EvalCurves.auc_at_p(fpr,tpr,0.8) + 0.2) - auroc) < 1e-64
+
 end
 
 

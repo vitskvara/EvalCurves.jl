@@ -79,7 +79,7 @@ end
 """
     auc(x,y, [weights])
 
-Computes the are under curve (x,y).
+Computes the area under curve (x,y).
 """
 function auc(x,y, weights = "same")
     # compute the increments
@@ -109,6 +109,29 @@ function auc(x,y, weights = "same")
 end
 
 auc(x::Tuple, weights = "same") = auc(x..., weights)
+
+"""
+    auc_at_p(x,y,p,[weights])
+
+Compute the left 100*p% of the integral under (x,y). 
+"""
+function auc_at_p(x,y,p,weights="same")
+    @assert 0.0 <= p <= 1.0
+    # get the x up to which we integrate
+    px = maximum(x)*p + minimum(x)*(1-p)
+    # now, this is done so that the resulting (_x,_y)
+    # under which is integrated ends correctly, 
+    # otherwise integrals will not sum up as part will be ommited
+    inds = x.<=px
+    lefti = sum(inds)
+    righti = lefti + 1
+    ratio = (px - x[lefti])/(x[righti] - x[lefti])
+    py = y[righti]*ratio + y[lefti]*(1-ratio)
+    # contruct the correct (_x,_y) and compute the new integral
+    _x = push!(x[inds],px)
+    _y = push!(y[inds],py)
+    return auc(_x,_y,weights)
+end
 
 """
     plotroc(args...)
