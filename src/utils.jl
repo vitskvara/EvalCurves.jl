@@ -352,13 +352,15 @@ sample_uniform(bounds) = rand(size(bounds,1)).*(bounds[:,2]-bounds[:,1]).+bounds
 """
     enclosed_volume(X, n_samples, predict_fun)
 
-Estimates the normed volume enclosed by the decision boundary
+Estimates the normalized volume enclosed by the decision boundary
 given a prediction function that return 1 for points inside and
 0 for points outside the boundary.
 """
 function enclosed_volume(X::Matrix, n_samples::Int, predict_fun)
+    # limits of the hypercube
     bounds = cat(2,minimum(X,2),maximum(X,2))
-    sizes = abs.(bounds[:,1]-bounds[:,2])
+    # count hits inside and then simply divide them 
+    # by the total number of samples
     hits = 0
     for n in 1:n_samples
         sample = sample_uniform(bounds)
@@ -401,7 +403,7 @@ end
 """
     volume_at_fpr(X, y_true, p, n_samples, predict_fun, ascore_fun, setthreshold_fun)
 
-
+Computes the 
 """
 function volume_at_fpr(X::Matrix, y_true, p::Real, n_samples::Int,
     predict_fun, ascore_fun, setthreshold_fun)
