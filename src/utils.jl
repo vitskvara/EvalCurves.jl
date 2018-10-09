@@ -111,11 +111,11 @@ end
 auc(x::Tuple, weights = "same") = auc(x..., weights)
 
 """
-    auc_at_p(x,y,p,[weights])
+    auc_at_p(x,y,p,[weights,normalize])
 
 Compute the left 100*p% of the integral under (x,y). 
 """
-function auc_at_p(x,y,p,weights="same")
+function auc_at_p(x,y,p,weights="same";normalize=false)
     @assert 0.0 <= p <= 1.0
     # get the x up to which we integrate
     px = maximum(x)*p + minimum(x)*(1-p)
@@ -123,11 +123,11 @@ function auc_at_p(x,y,p,weights="same")
     # under which is integrated ends correctly, 
     # otherwise integrals will not sum up as part will be ommited
     inds = x.<=px
-    py = tpr_at_p(x,y,px)
+    py = tpr_at_fpr(x,y,px)
     # contruct the correct (_x,_y) and compute the new integral
     _x = push!(x[inds],px)
     _y = push!(y[inds],py)
-    return auc(_x,_y,weights)
+    (normalize)? (return auc(_x,_y,weights)/p) : (return auc(_x,_y,weights))
 end
 
 """
@@ -312,26 +312,26 @@ mcc(y_true, y_pred) = matthews_correlation_coefficient(y_true, y_pred)
 ###############################
 
 """
-   precision_at_k(y_true, y_pred, ascores, k)
+   precision_at_k(y_true, y_pred, score, k)
 
 Precision at k most anomalous samples. 
 """
-function precision_at_k(y_true, y_pred, ascores::Vector, k::Int)
-    lt, lp, las = length(y_true), length(y_pred), length(ascores)
+function precision_at_k(y_true, y_pred, score::Vector, k::Int)
+    lt, lp, las = length(y_true), length(y_pred), length(score)
     @assert lt == lp == las
     @assert all(k.<= (lt,lp,las))
     # sort anomaly scores from the largest
-    isort = sortperm(ascores,rev=true)
+    isort = sortperm(score,rev=true)
     return precision(y_true[isort][1:k], y_pred[isort][1:k])
 end
 
 """
-    tpr_at_p(fpr, tpr, p)
+    tpr_at_fpr(fpr, tpr, p)
 
 Return true positive rate @ p% false positive rate given
 true positive rate and false positive rate vectors (ROC curve).
 """
-function tpr_at_p(fpr::Vector, tpr::Vector, p::Real)
+function tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real)
     @assert 0 <= p <= 1
     # find the place where p fals between two points at fpr
     inds = fpr.<=p
@@ -342,4 +342,71 @@ function tpr_at_p(fpr::Vector, tpr::Vector, p::Real)
     return tpr[righti]*ratio + tpr[lefti]*(1-ratio)
 end
 
+"""
+    sample_uniform(bounds)
 
+Sample uniformly in N dimensions between given bounds.
+"""
+sample_uniform(bounds) = rand(size(bounds,1)).*(bounds[:,2]-bounds[:,1]).+bounds[:,1]
+
+"""
+    enclosed_volume(X, n_samples, predict_fun)
+
+Estimates the normed volume enclosed by the decision boundary
+given a prediction function that return 1 for points inside and
+0 for points outside the boundary.
+"""
+function enclosed_volume(X::Matrix, n_samples::Int, predict_fun)
+    bounds = cat(2,minimum(X,2),maximum(X,2))
+    sizes = abs.(bounds[:,1]-bounds[:,2])
+    hits = 0
+    for n in 1:n_samples
+        sample = sample_uniform(bounds)
+        hits += predict_fun(sample)
+    end
+    return hits/n_samples
+end
+
+"""
+    threshold_at_fpr(y_true, score::Vector, p::Real)
+
+Returns a classifier threshold at given p% false positive rate.
+"""
+function threshold_at_fpr(y_true, score::Vector, p::Real)
+    N = length(score)
+    @assert N == length(y_true)
+    @assert 0.0 <= p .< 1.0
+    isort = sortperm(score,rev=true)
+    sorted_score = score[isort]    
+    sorted_labels = y_true[isort]
+    n = length(y_true) - sum(y_true)
+    # construct the fpr vector
+    fprs = zeros(N+1)
+    fpr = 0.0
+    for i in 1:N
+        if sorted_labels[i] == 0
+            fpr += 1/n
+        end
+        fprs[i] = fpr
+    end
+    fprs[end] = 1.0
+    # now cut it at p
+    lefti = sum(fprs.<=p)
+    righti = lefti + 1
+    # now interpolate for tpr
+    ratio = (p - fprs[lefti])/(fprs[righti] - fprs[lefti])
+    return sorted_score[righti]*ratio + sorted_score[lefti]*(1-ratio)
+end
+
+"""
+    volume_at_fpr(X, y_true, p, n_samples, predict_fun, ascore_fun, setthreshold_fun)
+
+
+"""
+function volume_at_fpr(X::Matrix, y_true, p::Real, n_samples::Int,
+    predict_fun, ascore_fun, setthreshold_fun)
+    ascores = ascore_fun(X)
+    threshold = threshold_at_fpr(y_true, ascores, p)
+    setthreshold_fun(threshold)
+    return enclosed_volume(X, n_samples, predict_fun)
+end
