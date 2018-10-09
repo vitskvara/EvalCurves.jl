@@ -123,10 +123,7 @@ function auc_at_p(x,y,p,weights="same")
     # under which is integrated ends correctly, 
     # otherwise integrals will not sum up as part will be ommited
     inds = x.<=px
-    lefti = sum(inds)
-    righti = lefti + 1
-    ratio = (px - x[lefti])/(x[righti] - x[lefti])
-    py = y[righti]*ratio + y[lefti]*(1-ratio)
+    py = tpr_at_p(x,y,px)
     # contruct the correct (_x,_y) and compute the new integral
     _x = push!(x[inds],px)
     _y = push!(y[inds],py)
@@ -309,3 +306,39 @@ end
 Returns Matthews correlation coefficient = (tp*tn - fp*fn)/sqrt((tp+fp)(tp+fn)(tn+fp)(tn+fn)).
 """
 mcc(y_true, y_pred) = matthews_correlation_coefficient(y_true, y_pred)
+
+###############################
+### advanced metrics for ad ###
+###############################
+
+"""
+   precision_at_k(y_true, y_pred, ascores, k)
+
+Precision at k most anomalous samples. 
+"""
+function precision_at_k(y_true, y_pred, ascores::Vector, k::Int)
+    lt, lp, las = length(y_true), length(y_pred), length(ascores)
+    @assert lt == lp == las
+    @assert all(k.<= (lt,lp,las))
+    # sort anomaly scores from the largest
+    isort = sortperm(ascores,rev=true)
+    return precision(y_true[isort][1:k], y_pred[isort][1:k])
+end
+
+"""
+    tpr_at_p(fpr, tpr, p)
+
+Return true positive rate @ p% false positive rate given
+true positive rate and false positive rate vectors (ROC curve).
+"""
+function tpr_at_p(fpr::Vector, tpr::Vector, p::Real)
+    @assert 0 <= p <= 1
+    # find the place where p fals between two points at fpr
+    inds = fpr.<=p
+    lefti = sum(inds)
+    righti = lefti + 1
+    # now interpolate for tpr
+    ratio = (p - fpr[lefti])/(fpr[righti] - fpr[lefti])
+    return tpr[righti]*ratio + tpr[lefti]*(1-ratio)
+end
+
