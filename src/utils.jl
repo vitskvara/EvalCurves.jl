@@ -162,9 +162,9 @@ Transform x to binary labels if needed.
 """
 function binarize(x::Vector)
     vals = sort(unique(x))
-    (length(vals) == 2)? nothing : error("values of x are not binary!")
+    (length(vals) in [1,2])? nothing : error("values of x are not binary!")
     # if they are (false, true) or (0,1), do nothing
-    if vals == [0,1]
+    if (vals == [0,1]) || (vals == [1]) || (vals == [0])
         return x
     # else relabel them
     else
@@ -176,13 +176,13 @@ function binarize(x::Vector)
 end
 
 true_positive_inds(y_true::Vector, y_pred::Vector) = 
-    (binarize(y_true).==1) .& (binarize(y_hat).==1)
+    (binarize(y_true).==1) .& (binarize(y_pred).==1)
 true_negative_inds(y_true::Vector, y_pred::Vector) = 
-    (binarize(y_true).==0) .& (binarize(y_hat).==0)
+    (binarize(y_true).==0) .& (binarize(y_pred).==0)
 false_positive_inds(y_true::Vector, y_pred::Vector) = 
-    (binarize(y_true).==0) .& (binarize(y_hat).==1)
+    (binarize(y_true).==0) .& (binarize(y_pred).==1)
 false_negative_inds(y_true::Vector, y_pred::Vector) = 
-    (binarize(y_true).==1) .& (binarize(y_hat).==0)
+    (binarize(y_true).==1) .& (binarize(y_pred).==0)
 
 true_positive(y_true, y_pred) = sum(true_positive_inds(y_true, y_pred))
 true_negative(y_true, y_pred) = sum(true_negative_inds(y_true, y_pred))
@@ -341,4 +341,5 @@ function tpr_at_p(fpr::Vector, tpr::Vector, p::Real)
     ratio = (p - fpr[lefti])/(fpr[righti] - fpr[lefti])
     return tpr[righti]*ratio + tpr[lefti]*(1-ratio)
 end
+
 
