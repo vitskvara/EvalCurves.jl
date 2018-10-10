@@ -1,6 +1,6 @@
 module EvalCurves
 using PyPlot
-const Float = Float64
+using LinearAlgebra
 
 include("utils.jl")
 
