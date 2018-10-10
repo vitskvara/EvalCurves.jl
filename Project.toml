@@ -1,0 +1,5 @@
+name = "EvalCurves"
+uuid = "f38dcc0d-dce9-59d8-8cbc-ed225c093724"
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"

@@ -366,7 +366,7 @@ function enclosed_volume(X::Matrix, n_samples::Int, predict_fun)
         sample = sample_uniform(bounds)
         hits += predict_fun(sample)
     end
-    return hits/n_samples
+    return 1. - hits/n_samples
 end
 
 """
