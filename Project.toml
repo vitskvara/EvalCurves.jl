@@ -1,7 +1,8 @@
 name = "EvalCurves"
 uuid = "f38dcc0d-dce9-59d8-8cbc-ed225c093724"
-author = ["Vít Škvára <vit.skvara@gmail.com>"]
+authors = ["Vít Škvára <vit.skvara@gmail.com>"]
 repository = "https://github.com/vitskvara/EvalCurves.jl.git"
+version = "0.0.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

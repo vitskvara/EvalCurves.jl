@@ -36,12 +36,12 @@ println("Matthews correlation coefficient:")
 println(EvalCurves.mcc(tstY,hatY))
 println("")
 
-for fpr in [0.05, 0.1, 0.3, 0.5, 0.9]
-	vol = EvalCurves.volume_at_fpr(tstX, tstY, fpr, 10000,
+for fpri in [0.05, 0.1, 0.3, 0.5, 0.9]
+	vol = EvalCurves.volume_at_fpr(tstX, tstY, fpri, 10000,
 	    x->AnomalyDetection.predict(model,x), 
 	    x->AnomalyDetection.anomalyscore(model,x), 
 	    x->setfield!(model, :threshold, x))
-	println("at $fpr false positive rate:")
+	println("at $fpri false positive rate:")
 	println("enclosed volume: $vol")
 	yhat = AnomalyDetection.predict(model, tstX)
 	tfpr = EvalCurves.false_positive_rate(tstY, yhat)

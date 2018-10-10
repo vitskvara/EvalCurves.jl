@@ -144,7 +144,8 @@ function plotroc(args...)
 	title("ROC")
 
     # plot the diagonal line
-    plot(linspace(0,1,100), linspace(0,1,100), c = "gray", alpha = 0.5, label = "")
+    plot(range(0,stop=1,length=100), range(0,stop=1,length=100), 
+        c = "gray", alpha = 0.5, label = "")
     for arg in args
         plot(arg[1], arg[2], label = arg[3], lw = 2)
     end
@@ -358,7 +359,7 @@ given a prediction function that return 1 for points inside and
 """
 function enclosed_volume(X::Matrix, n_samples::Int, predict_fun)
     # limits of the hypercube
-    bounds = cat(2,minimum(X,2),maximum(X,2))
+    bounds = cat(minimum(X,dims=2),maximum(X,dims=2), dims=2)
     # count hits inside and then simply divide them 
     # by the total number of samples
     hits = 0
