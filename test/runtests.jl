@@ -1,5 +1,5 @@
 using EvalCurves
-using Base.Test
+using Test, LinearAlgebra
 import EvalCurves: auc, roccurve
 
 # create artificial data
@@ -13,9 +13,9 @@ N = size(labels,1)
 	auroc = EvalCurves.auc(fprvec, tprvec)
 	@test auroc==0.75
 	aauroc = EvalCurves.auc(fprvec, tprvec, "1/x")
-	@test round(aauroc, 4)==1.0833
+	@test round(aauroc; digits = 4)==1.0833
 	caauroc = EvalCurves.auc(fprvec, tprvec, "centered")
-	@test round(caauroc, 4)==1.3524
+	@test round(caauroc; digits = 4)==1.3524
 	
 	# auc_at_p test
 	tpr = [0.0, 0.2, 0.2, 0.25, 0.25, 1.0, 1.0, 1.0, 1.0]
@@ -55,14 +55,14 @@ end
  	for i in 1:30
  		counts = rand(1:100, 2)
  		labels = vcat(zeros(counts[1]), ones(counts[2]))
- 		ascores = rand(size(labels))
+ 		ascores = rand(Float64, size(labels))
 
  		compareskauc(labels, ascores)
  	end
 
  	# Perfect dataset
- 	labels = vcat(zeros(50), ones(50))
- 	ascores = 1. .* labels
+ 	global labels = vcat(zeros(50), ones(50))
+ 	global ascores = 1. .* labels
  	compareskauc(labels, ascores)
 
  	# No true positive dataset

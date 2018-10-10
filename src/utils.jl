@@ -42,8 +42,8 @@ function roccurve(score::Vector, labels :: Vector)
     fprvec = fprvec[1:curveidx] 
     
     # sort out numerical -0
-    fprvec = abs.(round.(fprvec,10))
-    tprvec = abs.(round.(tprvec,10))
+    fprvec = abs.(round.(fprvec; digits = 10))
+    tprvec = abs.(round.(tprvec; digits = 10))
 
     # sort them
     isf = sortperm(fprvec)
@@ -91,7 +91,7 @@ function auc(x,y, weights = "same")
         b = dx
     elseif weights == "1/x"
         inz = x.!=0 # nonzero indices
-        w = 1./x[inz]
+        w = 1 ./x[inz]
         # w = w/sum(w) # this is numerically unstable
         a = (y[1:end-1] + dy/2)[inz[2:end]]
         a = a.*w
@@ -99,7 +99,7 @@ function auc(x,y, weights = "same")
     elseif weights == "centered"
         x = (x[2:end] + x[1:end-1])/2 # this is used for symmetric case
         inz = x.!=0 # nonzero indices
-        w = 1./x[inz]
+        w = 1 ./x[inz]
         a = (y[1:end-1] + dy/2)[inz] 
         a = a.*w
         b = dx[inz]
@@ -127,7 +127,7 @@ function auc_at_p(x,y,p,weights="same";normalize=false)
     # contruct the correct (_x,_y) and compute the new integral
     _x = push!(x[inds],px)
     _y = push!(y[inds],py)
-    (normalize)? (return auc(_x,_y,weights)/p) : (return auc(_x,_y,weights))
+    normalize ? (return auc(_x,_y,weights)/p) : (return auc(_x,_y,weights))
 end
 
 """
@@ -162,7 +162,7 @@ Transform x to binary labels if needed.
 """
 function binarize(x::Vector)
     vals = sort(unique(x))
-    (length(vals) in [1,2])? nothing : error("values of x are not binary!")
+    (length(vals) in [1,2]) ? nothing : error("values of x are not binary!")
     # if they are (false, true) or (0,1), do nothing
     if (vals == [0,1]) || (vals == [1]) || (vals == [0])
         return x
