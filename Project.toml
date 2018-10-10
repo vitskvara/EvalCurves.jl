@@ -1,0 +1,5 @@
+name = "EvalCurves"
+uuid = "f38dcc0d-dce9-59d8-8cbc-ed225c093724"
+version = "0.1.0"
+author = ["Vít Škvára <vit.skvara@gmail.com>"]
+repository = "https://github.com/vitskvara/EvalCurves.jl.git"

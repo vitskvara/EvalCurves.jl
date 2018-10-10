@@ -1,0 +1,9 @@
+[[LinearAlgebra]]
+deps = ["Libdl"]
+uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[[PyPlot]]
+deps = ["Colors", "Compat", "LaTeXStrings", "PyCall", "VersionParsing"]
+git-tree-sha1 = "777c48006c57c8bd322d2032267085983a5fd50f"
+uuid = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+version = "2.6.3"
