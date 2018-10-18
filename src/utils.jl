@@ -344,13 +344,6 @@ function tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real)
 end
 
 """
-    sample_uniform(bounds)
-
-Sample uniformly in N dimensions between given bounds.
-"""
-sample_uniform(bounds) = rand(size(bounds,1)).*(bounds[:,2]-bounds[:,1]).+bounds[:,1]
-
-"""
     enclosed_volume(X, n_samples, predict_fun)
 
 Estimates the normalized volume enclosed by the decision boundary
@@ -362,11 +355,7 @@ function enclosed_volume(X::Matrix, n_samples::Int, predict_fun)
     bounds = cat(minimum(X,dims=2),maximum(X,dims=2), dims=2)
     # count hits inside and then simply divide them 
     # by the total number of samples
-    hits = 0
-    for n in 1:n_samples
-        sample = sample_uniform(bounds)
-        hits += predict_fun(sample)
-    end
+    hits = sum(predict_fun(rand(size(bounds,1),n_samples).*(bounds[:,2]-bounds[:,1]).+bounds[:,1]))
     return 1. - hits/n_samples
 end
 
