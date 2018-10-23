@@ -317,7 +317,7 @@ mcc(y_true, y_pred) = matthews_correlation_coefficient(y_true, y_pred)
 
 Precision at k most anomalous samples.
 """
-function precision_at_k(y_true, y_pred, score::Vector, k::Int)
+function precision_at_k(score, y_true, k::Int)
     lt, las = length(y_true), length(score)
     @assert lt == las
     @assert all(k .<= (lt, las))
@@ -348,7 +348,7 @@ end
 
 Returns a classifier threshold at given p% false positive rate.
 """
-function threshold_at_fpr(y_true, score::Vector, p::Real)
+function threshold_at_fpr(score::Vector, y_true, p::Real)
     N = length(score)
     @assert N == length(y_true)
     @assert 0.0 <= p .< 1.0
@@ -439,21 +439,21 @@ end
 Computes the volume of space for which the classifier marks samples as normal.
 To achieve better precision, X should be a union of train and test set
 """
-function volume_at_fpr(X::Matrix, y_true, p::Real, n_samples::Int, predict_fun, ascore_fun, setthreshold_fun)
+function volume_at_fpr(X::Matrix, y_true, p::Real, predict_fun, ascore_fun, setthreshold_fun, n_samples::Int = 10000)
     ascores = ascore_fun(X)
     threshold = threshold_at_fpr(y_true, ascores, p)
 	if threshold == NaN
 		return NaN
 	end
     setthreshold_fun(threshold)
-    return mc_volume_estimate(() -> sample_volume(predict_fun, estimate_bounds(X))
+    return mc_volume_estimate(() -> sample_volume(predict_fun, estimate_bounds(X), n_samples)
 end
 
-function volume_at_fpr(X::Matrix, y_true, p::Real, n_samples::Int, ascore_fun)
+function volume_at_fpr(X::Matrix, y_true, p::Real, ascore_fun, n_samples::Int = 10000)
     ascores = ascore_fun(X)
     threshold = threshold_at_fpr(y_true, ascores, p)
 	if threshold == NaN
 		return NaN
 	end
-    return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, estimate_bounds(X))
+    return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, estimate_bounds(X), n_samples)
 end
