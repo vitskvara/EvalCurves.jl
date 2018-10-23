@@ -322,7 +322,7 @@ function precision_at_k(score, y_true, k::Int)
     @assert lt == las
     @assert all(k .<= (lt, las))
     # sort anomaly scores from the largest
-	isort = sortperm(scores, rev = true)
+	isort = sortperm(score, rev = true)
     return mean(y_true[isort][1:k])
 end
 
@@ -348,10 +348,10 @@ end
 
 Returns a classifier threshold at given p% false positive rate.
 """
-function threshold_at_fpr(score::Vector, y_true, p::Real)
-    N = length(score)
+function threshold_at_fpr(scores::Vector, y_true, fpr::Real)
+    N = length(scores)
     @assert N == length(y_true)
-    @assert 0.0 <= p .< 1.0
+    @assert 0.0 <= fpr .< 1.0
 
 	descendingidx = sortperm(scores, rev = true)
     scores = scores[descendingidx]
@@ -379,8 +379,8 @@ function threshold_at_fpr(score::Vector, y_true, p::Real)
 	lefti = lastsmaller
 	righti = lefti + 1
 	# now interpolate for tpr
-    ratio = (p - fprs[lefti])/(fprs[righti] - fprs[lefti])
-    return sorted_score[righti]*ratio + sorted_score[lefti]*(1-ratio)
+    ratio = (fpr - fps[lefti]) / (fps[righti] - fps[lefti])
+    return scores[righti] * ratio + scores[lefti] * (1 - ratio)
 end
 
 """
@@ -389,13 +389,13 @@ end
 Samples one volume of the decision space where classifier marks samples as normal.
 """
 function sample_volume(score_fun, threshold, bounds, samples::Int = 10000)
-    s = hcat(map(v -> length(v) == 2 ? rand(samples) .* (v[2] - v[1]) .+ v[1] : v[rand(1:length(v), samples)], bounds)...)
+    s = vcat(map(v -> length(v) == 2 ? rand(1, samples) .* (v[2] - v[1]) .+ v[1] : v[rand(1:length(v), 1, samples)], bounds)...)
     scores = score_fun(s)
     return count(scores .<= threshold) / samples
 end
 
 function sample_volume(predict_fun, bounds, samples::Int = 10000)
-    s = hcat(map(v -> length(v) == 2 ? rand(samples) .* (v[2] - v[1]) .+ v[1] : v[rand(1:length(v), samples)], bounds)...)
+    s = vcat(map(v -> length(v) == 2 ? rand(1, samples) .* (v[2] - v[1]) .+ v[1] : v[rand(1:length(v), 1, samples)], bounds)...)
     hits = sum(predict_fun(s))
     return 1. - hits / n_samples
 end
@@ -439,21 +439,17 @@ end
 Computes the volume of space for which the classifier marks samples as normal.
 To achieve better precision, X should be a union of train and test set
 """
-function volume_at_fpr(X::Matrix, y_true, p::Real, predict_fun, ascore_fun, setthreshold_fun, n_samples::Int = 10000)
-    ascores = ascore_fun(X)
-    threshold = threshold_at_fpr(y_true, ascores, p)
+function volume_at_fpr(threshold, bounds, predict_fun, setthreshold_fun, n_samples::Int = 10000)
 	if threshold == NaN
 		return NaN
 	end
     setthreshold_fun(threshold)
-    return mc_volume_estimate(() -> sample_volume(predict_fun, estimate_bounds(X), n_samples)
+    return mc_volume_estimate(() -> sample_volume(predict_fun, bounds, n_samples))
 end
 
-function volume_at_fpr(X::Matrix, y_true, p::Real, ascore_fun, n_samples::Int = 10000)
-    ascores = ascore_fun(X)
-    threshold = threshold_at_fpr(y_true, ascores, p)
+function volume_at_fpr(threshold, bounds, ascore_fun, n_samples::Int = 10000)
 	if threshold == NaN
 		return NaN
 	end
-    return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, estimate_bounds(X), n_samples)
+    return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, bounds, n_samples))
 end
