@@ -27,7 +27,7 @@ auroc = EvalCurves.auc(fpr, tpr)
 # plot ROC and test the new metrics
 EvalCurves.plotroc((fpr,tpr,"$(auroc)"))
 println("precision at k=10 most anomalous samples:")
-println(EvalCurves.precision_at_k(tstY,hatY,as,10))
+println(EvalCurves.precision_at_k(as,tstY, 10))
 println("true positive rate @ 0.05 false positive rate:")
 println(EvalCurves.tpr_at_fpr(fpr,tpr,0.05))
 println("normalized AUC @ 0.05 false positive rate:")
@@ -36,11 +36,19 @@ println("Matthews correlation coefficient:")
 println(EvalCurves.mcc(tstY,hatY))
 println("")
 
+### now lets try the MC volume estimate ###
+bounds = EvalCurves.estimate_bounds(tstX)
+tras = AnomalyDetection.anomalyscore(model, trX)
+trfpr, trtpr = EvalCurves.roccurve(tras, trY)
 for fpri in [0.05, 0.1, 0.3, 0.5, 0.9]
-	vol = EvalCurves.volume_at_fpr(tstX, tstY, fpri, 10000,
-	    x->AnomalyDetection.predict(model,x), 
-	    x->AnomalyDetection.anomalyscore(model,x), 
-	    x->setfield!(model, :threshold, x))
+	threshold = EvalCurves.threshold_at_fpr(tras, trY, fpri)
+	# volume computing function
+	vf() = EvalCurves.volume_at_fpr(threshold, bounds, 
+						x->AnomalyDetection.predict(model,x), 
+						x->setfield!(model, :threshold, x),
+						10000)
+
+	vol = vf() #EvalCurves.mc_volume_estimate(vf, 10)
 	println("at $fpri false positive rate:")
 	println("enclosed volume: $vol")
 	yhat = AnomalyDetection.predict(model, tstX)

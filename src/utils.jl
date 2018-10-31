@@ -348,7 +348,7 @@ end
 
 Returns a classifier threshold at given p% false positive rate.
 """
-function threshold_at_fpr(scores::Vector, y_true, fpr::Real)
+function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warn = true)
     N = length(scores)
     @assert N == length(y_true)
     @assert 0.0 <= fpr .< 1.0
@@ -369,10 +369,10 @@ function threshold_at_fpr(scores::Vector, y_true, fpr::Real)
     ids = fpr .>= fps
     lastsmaller = sum(ids)
     if lastsmaller == 0
-        @warn "No score to estimate lower FPR than $(fps[1])"
+        if warn @warn "No score to estimate lower FPR than $(fps[1])" end
         return NaN # thresholds[1]
     elseif lastsmaller == length(fps)
-        @warn "No score to estimate higher FPR than $(fps[end])"
+        if warn @warn "No score to estimate higher FPR than $(fps[end])" end
         return NaN # thresholds[end]
     end
 
@@ -397,7 +397,7 @@ end
 function sample_volume(predict_fun, bounds, samples::Int = 10000)
     s = vcat(map(v -> length(v) == 2 ? rand(1, samples) .* (v[2] - v[1]) .+ v[1] : v[rand(1:length(v), 1, samples)], bounds)...)
     hits = sum(predict_fun(s))
-    return 1. - hits / n_samples
+    return 1. - hits / samples
 end
 
 """
@@ -434,7 +434,7 @@ function estimate_bounds(X::Matrix, threshold = 0.05)
 end
 
 """
-    volume_at_fpr(X, y_true, p, n_samples, predict_fun, ascore_fun, setthreshold_fun)
+    volume_at_fpr(threshold, bounds, predict_fun, setthreshold_fun, [n_samples])
 
 Computes the volume of space for which the classifier marks samples as normal.
 To achieve better precision, X should be a union of train and test set
@@ -447,6 +447,12 @@ function volume_at_fpr(threshold, bounds, predict_fun, setthreshold_fun, n_sampl
     return mc_volume_estimate(() -> sample_volume(predict_fun, bounds, n_samples))
 end
 
+"""
+    volume_at_fpr(threshold, bounds, ascore_fun, [n_samples])
+
+Computes the volume of space for which the classifier marks samples as normal.
+To achieve better precision, X should be a union of train and test set
+"""
 function volume_at_fpr(threshold, bounds, ascore_fun, n_samples::Int = 10000)
 	if threshold == NaN
 		return NaN
