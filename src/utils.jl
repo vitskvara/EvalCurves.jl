@@ -391,7 +391,8 @@ Samples one volume of the decision space where classifier marks samples as norma
 function sample_volume(score_fun, threshold, bounds, samples::Int = 10000)
     s = vcat(map(v -> length(v) == 2 ? rand(1, samples) .* (v[2] - v[1]) .+ v[1] : v[rand(1:length(v), 1, samples)], bounds)...)
     scores = score_fun(s)
-    return count(scores .<= threshold) / samples
+    # this is because of ties and numerical comparisons
+    return count((threshold .- scores).<1e-6) / samples
 end
 
 function sample_volume(predict_fun, bounds, samples::Int = 10000)
