@@ -37,11 +37,11 @@ println(EvalCurves.mcc(tstY,hatY))
 println("")
 
 ### now lets try the MC volume estimate ###
-bounds = EvalCurves.estimate_bounds(tstX)
-tras = AnomalyDetection.anomalyscore(model, trX)
-trfpr, trtpr = EvalCurves.roccurve(tras, trY)
+bounds = EvalCurves.estimate_bounds(hcat(trX, tstX))
+tstas = AnomalyDetection.anomalyscore(model, tstX)
+trfpr, trtpr = EvalCurves.roccurve(tstas, tstY)
 for fpri in [0.05, 0.1, 0.3, 0.5, 0.9]
-	threshold = EvalCurves.threshold_at_fpr(tras, trY, fpri)
+	threshold = EvalCurves.threshold_at_fpr(tstas, tstY, fpri)
 	# volume computing function
 	vf() = EvalCurves.volume_at_fpr(threshold, bounds, 
 						x->AnomalyDetection.predict(model,x), 
