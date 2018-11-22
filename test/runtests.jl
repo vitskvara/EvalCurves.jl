@@ -25,6 +25,12 @@ N = size(labels,1)
 
 end
 
+@testset "threshold@FPR" begin
+    y_true = [0,1,0,0,1]
+	scores = [0.2, 0.4, 0.4, 0.4, 0.6]
+	fpr = 0.05
+	@test EvalCurves.threshold_at_fpr(scores, y_true, fpr) == 0.4
+end
 
 @testset "degenerative case" begin
 	x = ones(3)
