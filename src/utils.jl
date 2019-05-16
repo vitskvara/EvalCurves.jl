@@ -136,7 +136,9 @@ end
 Plot roc curves, where args is an iterable of triples (tprate, fprate, label).
 """
 function plotroc(args...)
-	f = figure()
+    @warn "Due to broken PyPlot dependency, this is now deprecated"
+    return nothing
+   f = figure()
 	xlim([0,1])
 	ylim([0,1])
 	xlabel("false positive rate")

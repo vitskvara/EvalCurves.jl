@@ -1,5 +1,4 @@
 module EvalCurves
-using PyPlot
 using LinearAlgebra
 using Statistics
 

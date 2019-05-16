@@ -17,6 +17,7 @@ Compute the are under ROC curve.
 auroc = EvalCurves.auc(fprvec, tprvec)
 ```
 
+!!! This is now deprecated !!!
 Plot an ROC curve.
 
 ```julia
