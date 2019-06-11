@@ -1,11 +1,9 @@
 """
-    (fpr, tpr) = roccurve(score, labels)
+    fpr, tpr = roccurve(score, labels)
 
-
-    calculate false positive rate and true positive rate
-
+Calculate false positive rate and true positive rate based on scores and true labels.
 """
-function roccurve(score::Vector, labels :: Vector)
+function roccurve(score::Vector, labels::Vector)
     N = size(labels,1)
     @assert N == size(score,1)
     if isnan(score[1])
@@ -53,27 +51,68 @@ function roccurve(score::Vector, labels :: Vector)
     tprvec = tprvec[ist]
     fprvec = fprvec[ist]
 
-    # this creates a semi-concave envelope of the roc curve
-    # experimental
-    #if concave
-    #    # this must be repeated at least N times
-    #    for n in 1:N
-    #        i = 1
-    #        maxi = length(fprvec)-1
-    #        while i <= maxi
-    #        #for i in 2:(length(fprvec)-1)
-    #            if (fprvec[i+1] == fprvec[i] && tprvec[i+1] > tprvec[i])
-    #                maxi = length(fprvec)
-    #                fprvec = fprvec[filter(x->x!=i,1:maxi)]
-    #                tprvec = tprvec[filter(x->x!=i,1:maxi)]
-    #                maxi = maxi - 2
-    #            end
-    #            i += 1
-    #        end
-    #    end
-    #end
-
     return fprvec, tprvec
+end
+
+"""
+    recall, precision = prcurve(score, labels)
+
+
+Calculate precision-recall curve based on scores and true labels.
+"""
+function prcurve(score::Vector, labels :: Vector)
+    N = size(labels,1)
+    @assert N == size(score,1)
+    if isnan(score[1])
+        warn("Anomaly score is NaN, check your inputs!")
+    end
+    precvec = zeros(N+2)
+    recvec = zeros(N+2)
+    p = sum(labels)
+    n = N - p
+    prec = 1.0
+    rec = 0.0
+    # so that the curve always starts at (1,0)
+    precvec[1] = prec # fp/(fp+tp)
+    recvec[1] = rec # tp/p
+    tp = 0
+    fp = 0
+    sortidx = sortperm(score,rev=true)
+    sorted_labels = labels[sortidx];
+    sorted_scores = score[sortidx];
+    curveidx = 1
+    for i in 2:N
+        if sorted_labels[i-1] == 1
+            tp += 1
+        else
+            fp += 1
+        end
+        prec = tp/(tp+fp)
+        rec = tp/p
+        if sorted_scores[i] != sorted_scores[i - 1]
+            curveidx += 1
+            precvec[curveidx] = prec
+            recvec[curveidx] = rec
+        end
+    end
+
+    # sometimes, rec does not end with 1.0 as it should
+    # this should happen for the lowest threshold -> rec = 1.0, prec = p/(p+n)
+    if recvec[curveidx] != 1.0
+        curveidx += 1
+        precvec[curveidx] =  p/(p+n)
+        recvec[curveidx] = 1.0
+    end
+
+    # cut the unneeded parts
+    precvec = precvec[1:curveidx]
+    recvec = recvec[1:curveidx]
+
+    # sort out numerical -0
+    precvec = abs.(round.(precvec; digits = 10))
+    recvec = abs.(round.(recvec; digits = 10))
+
+    return recvec, precvec
 end
 
 """
@@ -105,7 +144,7 @@ function auc(x,y, weights = "same")
         b = dx[inz]
     end
 
-    return dot(a,b)
+    return abs(dot(a,b))
 end
 
 auc(x::Tuple, weights = "same") = auc(x..., weights)
@@ -315,7 +354,7 @@ mcc(y_true, y_pred) = matthews_correlation_coefficient(y_true, y_pred)
 ###############################
 
 """
-   precision_at_k(y_true, y_pred, score, k)
+   precision_at_k(score, y_true, k)
 
 Precision at k most anomalous samples.
 """
@@ -346,7 +385,7 @@ function tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real)
 end
 
 """
-    threshold_at_fpr(y_true, score::Vector, p::Real)
+    threshold_at_fpr(scores, y_true, p[; warn])
 
 Returns a classifier threshold at given p% false positive rate.
 """

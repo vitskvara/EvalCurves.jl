@@ -43,42 +43,94 @@ end
 
 
 using PyCall
-@pyimport sklearn.metrics as sm
-
-function compareskauc(labels, ascores)
-	pyfpr, pytpr, _ = sm.roc_curve(labels, ascores, drop_intermediate = false)
-	pyauc = sm.auc(pyfpr, pytpr)
-
- 	fpr, tpr = EvalCurves.roccurve(ascores, labels)
- 	auc = EvalCurves.auc(fpr,tpr)
-
- 	@test pyauc ≈ auc
+const sm = PyNULL()
+runsklearntest = false
+try
+	copy!(sm, pyimport("sklearn.metrics"))
+	global runsklearntest = true
+catch e
+	global 	runsklearntest = false
 end
 
-@testset "Scikit learn comparison" begin
+if !runsklearntest
+	@info "SKlearn not found, skipping auc comparison tests."
+else
+	function compareskauc(labels, ascores)
+		pyfpr, pytpr, _ = sm.roc_curve(labels, ascores, drop_intermediate = false)
+		pyauc = sm.auc(pyfpr, pytpr)
 
-	# rand dataset
- 	for i in 1:30
- 		counts = rand(1:100, 2)
- 		labels = vcat(zeros(counts[1]), ones(counts[2]))
- 		ascores = rand(Float64, size(labels))
+	 	fpr, tpr = EvalCurves.roccurve(ascores, labels)
+	 	auc = EvalCurves.auc(fpr,tpr)
 
- 		compareskauc(labels, ascores)
- 	end
+	 	@test pyauc ≈ auc
+	end
 
- 	# Perfect dataset
- 	global labels = vcat(zeros(50), ones(50))
- 	global ascores = 1. .* labels
- 	compareskauc(labels, ascores)
+	@testset "SKlearn AUROC comparison" begin
+		# rand dataset
+	 	for i in 1:30
+	 		counts = rand(1:100, 2)
+	 		labels = vcat(zeros(counts[1]), ones(counts[2]))
+	 		ascores = rand(Float64, size(labels))
 
- 	# No true positive dataset
- 	labels = vcat(zeros(50), ones(50))
- 	ascores = -1. .* labels .+ 1
- 	compareskauc(labels, ascores)
+	 		compareskauc(labels, ascores)
+	 	end
 
-#   # exactly 0.5 AUC
- 	labels = [0; 0; 1; 1]
- 	ascores = [0; 1; 0; 1.]
- 	compareskauc(labels, ascores)
+	 	# Perfect dataset
+	 	labels = vcat(zeros(50), ones(50))
+		ascores = 1. .* labels
+	 	compareskauc(labels, ascores)
+
+	 	# No true positive dataset
+	 	labels = vcat(zeros(50), ones(50))
+	 	ascores = -1. .* labels .+ 1
+	 	compareskauc(labels, ascores)
+
+	    # exactly 0.5 AUC
+	 	labels = [0; 0; 1; 1]
+	 	ascores = [0; 1; 0; 1.]
+	 	compareskauc(labels, ascores)
+	end
+
+	function compareskauprc(labels, ascores)
+		pypr, pyrec, _ = sm.precision_recall_curve(labels, ascores)
+		pyauprc = sm.auc(pyrec, pypr)
+
+	 	rec, pr = EvalCurves.prcurve(ascores, labels)
+	 	auprc = EvalCurves.auc(rec,pr)
+
+	 	@test pyauprc ≈ auprc
+	end
+
+
+	@testset "SKlearn AUPRC comparison" begin
+		# easy example
+		ascores = [0.1, 0.4, 0.3, 0.5, 0.5, 0.6]
+		labels = [0, 0, 1, 0, 0, 1]
+		compareskauprc(labels, ascores)	
+
+		# rand dataset
+	 	for i in 1:30
+	 		counts = rand(1:100, 2)
+	 		labels = vcat(zeros(counts[1]), ones(counts[2]))
+	 		ascores = rand(Float64, size(labels))
+
+	 		compareskauprc(labels, ascores)
+	 	end
+
+	 	# Perfect dataset
+	 	labels = vcat(zeros(50), ones(50))
+	 	ascores = 1. .* labels
+	 	compareskauprc(labels, ascores)
+
+	 	# No true positive dataset
+	 	labels = vcat(zeros(50), ones(50))
+	 	ascores = -1. .* labels .+ 1
+	 	compareskauprc(labels, ascores)
+
+	    # exactly 0.5 AUC
+	 	labels = [0; 0; 1; 1]
+	 	ascores = [0; 1; 0; 1.]
+	 	compareskauprc(labels, ascores)
+		
+	end
 end
-
