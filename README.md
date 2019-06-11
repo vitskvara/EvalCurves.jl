@@ -64,11 +64,11 @@ t50 = EvalCurves.threshold_at_fpr(scores, labels, 0.5)
 
 # estimates the volume of the decision space where classifier marks samples as normal using MC sampling
 X = randn(2,100)
-score_fun(x) = sum(x.^2,dims=1)
+score_fun(x) = sqrt.(sum(x.^2,dims=1))
 Xbounds = EvalCurves.estimate_bounds(X) # this returns the boundaries of the dataset
 # everything larger than a threshold is an anomaly -> toghether with the chosen 
 # anomaly score function, this will label all samples with positive second dimension as anomalies
-for threshold in [0.0, 0.1, 0.5, 2.0]
+for threshold in [0.0, 0.1, 0.5, 1.0, 2.0]
 	vol = EvalCurves.volume_at_fpr(threshold, Xbounds, score_fun, 10000)
 	println("$threshold := $vol")
 end
