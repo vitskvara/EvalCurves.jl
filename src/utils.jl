@@ -55,12 +55,14 @@ function roccurve(score::Vector, labels::Vector)
 end
 
 """
-    recall, precision = prcurve(score, labels)
+    recall, precision = prcurve(score, labels[; zero_rec])
 
 
-Calculate precision-recall curve based on scores and true labels.
+Calculate precision-recall curve based on scores and true labels. The default behaviour
+is not the same as in scikit, where the first point is always (0.0,1.0). 
+Set zero_rec to 'true' to make it SK compatible.
 """
-function prcurve(score::Vector, labels :: Vector)
+function prcurve(score::Vector, labels::Vector; zero_rec=false)
     N = size(labels,1)
     @assert N == size(score,1)
     if isnan(score[1])
@@ -72,15 +74,19 @@ function prcurve(score::Vector, labels :: Vector)
     n = N - p
     prec = 1.0
     rec = 0.0
-    # so that the curve always starts at (1,0)
-    precvec[1] = prec # fp/(fp+tp)
-    recvec[1] = rec # tp/p
+    if zero_rec
+        # so that the curve always starts at (1,0)
+        precvec[1] = prec # fp/(fp+tp)
+        recvec[1] = rec # tp/p
+        curveidx = 1
+    else
+        curveidx = 0
+    end
     tp = 0
     fp = 0
     sortidx = sortperm(score,rev=true)
     sorted_labels = labels[sortidx];
     sorted_scores = score[sortidx];
-    curveidx = 1
     for i in 2:N
         if sorted_labels[i-1] == 1
             tp += 1

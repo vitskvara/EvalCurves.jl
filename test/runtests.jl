@@ -41,6 +41,13 @@ end
 	end
 end
 
+@testset "AUPRC" begin
+	ascores = [0.1, 0.4, 0.3, 0.5, 0.5, 0.6]
+	labels = [0, 0, 1, 0, 0, 1]
+	rec, pr = EvalCurves.prcurve(ascores, labels)
+	rec2, pr2 = EvalCurves.prcurve(ascores, labels; zero_rec=true)
+	@test length(rec2) == length(rec) + 1
+end
 
 using PyCall
 const sm = PyNULL()
@@ -95,7 +102,7 @@ else
 		pypr, pyrec, _ = sm.precision_recall_curve(labels, ascores)
 		pyauprc = sm.auc(pyrec, pypr)
 
-	 	rec, pr = EvalCurves.prcurve(ascores, labels)
+	 	rec, pr = EvalCurves.prcurve(ascores, labels; zero_rec=true)
 	 	auprc = EvalCurves.auc(rec,pr)
 
 	 	@test pyauprc ≈ auprc
