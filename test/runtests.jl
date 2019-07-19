@@ -1,3 +1,4 @@
+using Test
 using EvalCurves
 using Test, LinearAlgebra
 import EvalCurves: auc, roccurve
@@ -23,6 +24,64 @@ N = size(labels,1)
 	auroc = EvalCurves.auc(fpr, tpr)
 	@test ((EvalCurves.auc_at_p(fpr,tpr,0.8) + 0.2) - auroc) < 1e-64
 
+	# binarize
+	@test EvalCurves.binarize([-1,-1,1,1,-1]) == [0,0,1,1,0]
+	@test EvalCurves.binarize([2,2,2,2,2]) == [0,0,0,0,0]
+
+	# other basic measures
+	y = vcat(fill(0,1000),fill(1,500))
+	yhat = vcat(fill(0,750),fill(1,500),fill(0,250))
+	@test EvalCurves.true_positive(y,yhat)==250
+	@test EvalCurves.true_negative(y,yhat)==750
+	@test EvalCurves.false_positive(y,yhat)==250
+	@test EvalCurves.false_negative(y,yhat)==250
+
+	@test EvalCurves.true_positive_rate(y,yhat)==0.500
+	@test EvalCurves.true_negative_rate(y,yhat)==0.7500
+	@test EvalCurves.false_positive_rate(y,yhat)==0.2500
+	@test EvalCurves.false_negative_rate(y,yhat)==0.500
+	
+	@test EvalCurves.precision(y,yhat)==250/(250+250)==0.5
+	@test EvalCurves.accuracy(y,yhat)==(250+750)/(1000+500)==2/3
+	@test EvalCurves.negative_predictive_value(y, yhat)==0.75
+	@test EvalCurves.false_discovery_rate(y, yhat)==0.5
+	@test EvalCurves.false_omission_rate(y, yhat)==0.25
+	@test EvalCurves.f1_score(y, yhat)==0.5
+	@test EvalCurves.mcc(y, yhat)==0.5
+
+	# advanced measures
+	# prec@k
+	score = collect(1:10)/10
+	y_true = [0,0,0,0,0,1,1,1,1,1]
+	k=5
+	@test EvalCurves.precision_at_k(score, y_true, k)==1
+	y_true[10] = 0
+	@test EvalCurves.precision_at_k(score, y_true, k)==0.8
+	# tpr@fpr
+	fpr = collect(0:10)/10
+	tpr = sqrt.((collect(0:10)/10))
+	p=0.05
+	@test EvalCurves.tpr_at_fpr(fpr, tpr, p) == (tpr[1]+tpr[2])/2
+	# threshold@fpr
+	score = collect(1:10)/10
+	y_true = [0,0,0,0,0,1,1,1,1,1]
+	fpr=0.3
+	@test EvalCurves.threshold_at_fpr(score, y_true, fpr) == 0.45
+	# volume estimates		
+	X = randn(2,1000)
+	score_fun(x) = vec(sqrt.(sum(x.^2,dims=1)))
+	Xbounds = EvalCurves.estimate_bounds(X) 
+	threshold = 0.5
+	@test 0.02 < EvalCurves.sample_volume(score_fun, threshold, Xbounds) < 0.04
+	pred_fun(X) = (score_fun(X) .> threshold)
+	@test 0.02 < EvalCurves.sample_volume(pred_fun, Xbounds) < 0.04
+	@test 0.02 < EvalCurves.volume_at_threshold(threshold, Xbounds, score_fun) < 0.04
+	
+	# now test the one with labels
+	y_true = Int.(vec(score_fun(X).>1.2))
+	fpr = 0.78
+	threshold = EvalCurves.threshold_at_fpr(vec(score_fun(X)), y_true, fpr)
+	@test 0.01 < EvalCurves.volume_at_fpr(fpr, Xbounds, score_fun, X, y_true) < 0.1
 end
 
 @testset "threshold@FPR" begin

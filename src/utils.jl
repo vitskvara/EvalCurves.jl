@@ -217,8 +217,10 @@ function binarize(x::Vector)
     # else relabel them
     else
         _x = copy(x)
-        _x[_x.==vals[1]] == 0
-        _x[_x.==vals[2]] == 1
+        _x[_x.==vals[1]] .= 0
+        if length(vals)>1
+            _x[_x.==vals[2]] .= 1
+        end
         return _x
     end
 end
@@ -484,12 +486,12 @@ function estimate_bounds(X::Matrix, threshold = 0.05)
 end
 
 """
-    volume_at_fpr(threshold, bounds, predict_fun, setthreshold_fun, [n_samples])
+    volume_at_threshold(threshold, bounds, predict_fun, setthreshold_fun, [n_samples])
 
 Computes the volume of space for which the classifier marks samples as normal.
 To achieve better precision, X should be a union of train and test set
 """
-function volume_at_fpr(threshold, bounds, predict_fun, setthreshold_fun, n_samples::Int = 10000)
+function volume_at_threshold(threshold, bounds, predict_fun, setthreshold_fun, n_samples::Int = 10000)
 	if threshold == NaN
 		return NaN
 	end
@@ -498,14 +500,29 @@ function volume_at_fpr(threshold, bounds, predict_fun, setthreshold_fun, n_sampl
 end
 
 """
-    volume_at_fpr(threshold, bounds, ascore_fun, [n_samples])
+    volume_at_threshold(threshold, bounds, ascore_fun, [n_samples])
 
 Computes the volume of space for which the classifier marks samples as normal.
 To achieve better precision, X should be a union of train and test set
 """
-function volume_at_fpr(threshold, bounds, ascore_fun, n_samples::Int = 10000)
+function volume_at_threshold(threshold, bounds, ascore_fun, n_samples::Int = 10000)
 	if threshold == NaN
 		return NaN
 	end
+    return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, bounds, n_samples))
+end
+
+"""
+    volume_at_fpr(fpr, bounds, ascore_fun, X, y_true, [n_samples])
+
+Computes the volume of space for which the classifier marks samples as normal.
+To achieve better precision, X should be a union of train and test set
+"""
+function volume_at_fpr(fpr, bounds, ascore_fun, X, y_true, n_samples::Int = 10000)
+    scores = ascore_fun(X)
+    threshold = threshold_at_fpr(scores, y_true, fpr; warn = true)
+    if threshold == NaN
+        return NaN
+    end
     return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, bounds, n_samples))
 end
