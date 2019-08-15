@@ -2,6 +2,7 @@ using Test
 using EvalCurves
 using Test, LinearAlgebra
 import EvalCurves: auc, roccurve
+using Random
 
 # create artificial data
 labels = [0; 0; 0; 0; 1]
@@ -68,27 +69,45 @@ N = size(labels,1)
 	fpr=0.3
 	@test EvalCurves.threshold_at_fpr(score, y_true, fpr) == 0.45
 	# volume estimates		
+	Random.seed!(1234)
 	X = randn(2,1000)
 	score_fun(x) = vec(sqrt.(sum(x.^2,dims=1)))
 	Xbounds = EvalCurves.estimate_bounds(X) 
 	threshold = 0.5
-	@test 0.02 < EvalCurves.sample_volume(score_fun, threshold, Xbounds) < 0.04
+	@test 0.01 < EvalCurves.sample_volume(score_fun, threshold, Xbounds) < 0.04
 	pred_fun(X) = (score_fun(X) .> threshold)
-	@test 0.02 < EvalCurves.sample_volume(pred_fun, Xbounds) < 0.04
-	@test 0.02 < EvalCurves.volume_at_threshold(threshold, Xbounds, score_fun) < 0.04
+	@test 0.01 < EvalCurves.sample_volume(pred_fun, Xbounds) < 0.04
+	@test 0.01 < EvalCurves.volume_at_threshold(threshold, Xbounds, score_fun) < 0.04
 	
 	# now test the one with labels
 	y_true = Int.(vec(score_fun(X).>1.2))
 	fpr = 0.78
 	threshold = EvalCurves.threshold_at_fpr(vec(score_fun(X)), y_true, fpr)
 	@test 0.01 < EvalCurves.volume_at_fpr(fpr, Xbounds, score_fun, X, y_true) < 0.1
+	Random.seed!()
 end
 
 @testset "threshold@FPR" begin
     y_true = [0,1,0,0,1]
 	scores = [0.2, 0.4, 0.4, 0.4, 0.6]
 	fpr = 0.5
-	@test EvalCurves.threshold_at_fpr(scores, y_true, fpr) == 0.4
+	t = EvalCurves.threshold_at_fpr(scores, y_true, fpr)
+	@test t ≈ 0.4
+	@test fpr < EvalCurves.false_positive_rate(y_true, EvalCurves.predict_labels(scores, t)) 
+	y_true = [0,1,0,0,0,1]
+	scores = [0.2, 0.6, 0.4, 0.3, 0.5, 0.1]
+	fpr = 0.5
+	t=EvalCurves.threshold_at_fpr(scores, y_true, fpr)
+	@test  t == 0.4
+	@test fpr == EvalCurves.false_positive_rate(y_true, EvalCurves.predict_labels(scores, t)) 
+	fpr = 0.25
+	t=EvalCurves.threshold_at_fpr(scores, y_true, fpr)
+	@test  t == 0.5
+	@test fpr == EvalCurves.false_positive_rate(y_true, EvalCurves.predict_labels(scores, t)) 
+	fpr = 0.75
+	t=EvalCurves.threshold_at_fpr(scores, y_true, fpr)
+	@test  t == 0.3
+	@test fpr == EvalCurves.false_positive_rate(y_true, EvalCurves.predict_labels(scores, t)) 
 end
 
 @testset "degenerative case" begin
@@ -106,6 +125,17 @@ end
 	rec, pr = EvalCurves.prcurve(ascores, labels)
 	rec2, pr2 = EvalCurves.prcurve(ascores, labels; zero_rec=true)
 	@test length(rec2) == length(rec) + 1
+end
+
+@testset "f1@alpha" begin
+	scores = [0.1, 0.4, 0.3, 0.5, 0.6]
+	y_true = [0, 0, 1, 1, 1]
+	@test EvalCurves.f1_score(y_true, [0,1,0,1,1]) == EvalCurves.f1_at_threshold(0.35, scores, y_true)
+	@test EvalCurves.f1_score(y_true, [0,1,0,1,1]) == EvalCurves.f1_at_threshold(0.4, scores, y_true)
+	@test EvalCurves.f1_score(y_true, [0,1,1,1,1]) == EvalCurves.f1_at_threshold(0.3, scores, y_true)
+	@test EvalCurves.f1_score(y_true, [0,1,1,1,1]) == EvalCurves.f1_at_fpr(0.5, scores, y_true)
+	@test EvalCurves.f1_score(y_true, [0,0,0,0,0]) == EvalCurves.f1_at_fpr(0, scores, y_true)
+	@test EvalCurves.f1_score(y_true, [1,1,1,1,1]) == EvalCurves.f1_at_fpr(1, scores, y_true)
 end
 
 using PyCall

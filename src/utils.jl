@@ -202,6 +202,12 @@ end
 ###########################################
 ### basic binary classification metrics ###
 ###########################################
+"""
+    predict_labels(scores, threshold)
+
+All samples with score equal or alrger than threshold are given label 1.
+"""
+predict_labels(scores, threshold) = Int.(scores.>=threshold)
 
 """
    binarize(x)
@@ -395,12 +401,18 @@ end
 """
     threshold_at_fpr(scores, y_true, p[; warn])
 
-Returns a classifier threshold at given p% false positive rate.
+Returns a decision threshold at given p% false positive rate. Returns such threshold
+that the resulting fpr is as close as possible to p while (p <= fpr)
+- this is important to note especially on small datasets.
 """
 function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warn = true)
     N = length(scores)
     @assert N == length(y_true)
-    @assert 0.0 <= fpr .< 1.0
+    @assert 0.0 <= fpr <= 1.0
+
+    if fpr == 0
+        return maximum(scores)+eps()
+    end
 
 	descendingidx = sortperm(scores, rev = true)
     scores = scores[descendingidx]
@@ -423,12 +435,16 @@ function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warn = true)
         if warn @warn "No score to estimate lower FPR than $(fps[1])" end
         return NaN # thresholds[1]
     elseif lastsmaller == length(fps)
+        # this is here in case that this crashes because of 1
+        if fpr == 1
+            return minimum(scores)
+        end
         if warn @warn "No score to estimate higher FPR than $(fps[end])" end
         return NaN # thresholds[end]
     end
 
+    righti = lastsmaller+1
 	lefti = lastsmaller
-	righti = lefti + 1
 	# now interpolate for tpr
     ratio = (fpr - fps[lefti]) / (fps[righti] - fps[lefti])
     return scores[righti] * ratio + scores[lefti] * (1 - ratio)
@@ -526,3 +542,24 @@ function volume_at_fpr(fpr, bounds, ascore_fun, X, y_true, n_samples::Int = 1000
     end
     return mc_volume_estimate(() -> sample_volume(ascore_fun, threshold, bounds, n_samples))
 end
+
+"""
+    f1_at_threshold(threshold, scores, y_true)
+
+Compute f1 score given a threshold and score and true label vectors.
+"""
+function f1_at_threshold(threshold, scores, y_true)
+    y_pred = predict_labels(scores, threshold)
+    return f1_score(y_true, y_pred)
+end
+
+"""
+    f1_at_fpr(fpr, scores, y_true)
+
+Compute f1 score given a false positive value and score and true label vectors.
+"""
+function f1_at_fpr(fpr, scores, y_true)
+    t = threshold_at_fpr(scores, y_true, fpr)
+    return f1_at_threshold(t, scores, y_true)
+end
+
