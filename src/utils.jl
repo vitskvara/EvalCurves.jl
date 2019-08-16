@@ -544,22 +544,22 @@ function volume_at_fpr(fpr, bounds, ascore_fun, X, y_true, n_samples::Int = 1000
 end
 
 """
-    f1_at_threshold(threshold, scores, y_true)
+    f1_at_threshold(scores, y_true, threshold)
 
 Compute f1 score given a threshold and score and true label vectors.
 """
-function f1_at_threshold(threshold, scores, y_true)
+function f1_at_threshold(scores, y_true, threshold)
     y_pred = predict_labels(scores, threshold)
     return f1_score(y_true, y_pred)
 end
 
 """
-    f1_at_fpr(fpr, scores, y_true)
+    f1_at_fpr(scores, y_true, fpr)
 
 Compute f1 score given a false positive value and score and true label vectors.
 """
-function f1_at_fpr(fpr, scores, y_true)
+function f1_at_fpr(scores, y_true, fpr)
     t = threshold_at_fpr(scores, y_true, fpr)
-    return f1_at_threshold(t, scores, y_true)
+    return f1_at_threshold(scores, y_true, t)
 end
 

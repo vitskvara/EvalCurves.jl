@@ -130,12 +130,12 @@ end
 @testset "f1@alpha" begin
 	scores = [0.1, 0.4, 0.3, 0.5, 0.6]
 	y_true = [0, 0, 1, 1, 1]
-	@test EvalCurves.f1_score(y_true, [0,1,0,1,1]) == EvalCurves.f1_at_threshold(0.35, scores, y_true)
-	@test EvalCurves.f1_score(y_true, [0,1,0,1,1]) == EvalCurves.f1_at_threshold(0.4, scores, y_true)
-	@test EvalCurves.f1_score(y_true, [0,1,1,1,1]) == EvalCurves.f1_at_threshold(0.3, scores, y_true)
-	@test EvalCurves.f1_score(y_true, [0,1,1,1,1]) == EvalCurves.f1_at_fpr(0.5, scores, y_true)
-	@test EvalCurves.f1_score(y_true, [0,0,0,0,0]) == EvalCurves.f1_at_fpr(0, scores, y_true)
-	@test EvalCurves.f1_score(y_true, [1,1,1,1,1]) == EvalCurves.f1_at_fpr(1, scores, y_true)
+	@test EvalCurves.f1_score(y_true, [0,1,0,1,1]) == EvalCurves.f1_at_threshold(scores, y_true, 0.35)
+	@test EvalCurves.f1_score(y_true, [0,1,0,1,1]) == EvalCurves.f1_at_threshold(scores, y_true, 0.4)
+	@test EvalCurves.f1_score(y_true, [0,1,1,1,1]) == EvalCurves.f1_at_threshold(scores, y_true, 0.3)
+	@test EvalCurves.f1_score(y_true, [0,1,1,1,1]) == EvalCurves.f1_at_fpr(scores, y_true, 0.5)
+	@test EvalCurves.f1_score(y_true, [0,0,0,0,0]) == EvalCurves.f1_at_fpr(scores, y_true, 0)
+	@test EvalCurves.f1_score(y_true, [1,1,1,1,1]) == EvalCurves.f1_at_fpr(scores, y_true, 1)
 end
 
 using PyCall
