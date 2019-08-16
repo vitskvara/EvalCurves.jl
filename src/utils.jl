@@ -399,13 +399,13 @@ function tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real)
 end
 
 """
-    threshold_at_fpr(scores, y_true, p[; warn])
+    threshold_at_fpr(scores, y_true, p[; warns])
 
 Returns a decision threshold at given p% false positive rate. Returns such threshold
 that the resulting fpr is as close as possible to p while (p <= fpr)
 - this is important to note especially on small datasets.
 """
-function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warn = true)
+function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warns = true)
     N = length(scores)
     @assert N == length(y_true)
     @assert 0.0 <= fpr <= 1.0
@@ -432,14 +432,14 @@ function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warn = true)
     ids = fpr .>= fps
     lastsmaller = sum(ids)
     if lastsmaller == 0
-        if warn @warn "No score to estimate lower FPR than $(fps[1])" end
+        if warns @warn "No score to estimate lower FPR than $(fps[1])" end
         return NaN # thresholds[1]
     elseif lastsmaller == length(fps)
         # this is here in case that this crashes because of 1
         if fpr == 1
             return minimum(scores)
         end
-        if warn @warn "No score to estimate higher FPR than $(fps[end])" end
+        if warns @warn "No score to estimate higher FPR than $(fps[end])" end
         return NaN # thresholds[end]
     end
 
@@ -534,9 +534,9 @@ end
 Computes the volume of space for which the classifier marks samples as normal.
 To achieve better precision, X should be a union of train and test set
 """
-function volume_at_fpr(fpr, bounds, ascore_fun, X, y_true, n_samples::Int = 10000)
+function volume_at_fpr(fpr, bounds, ascore_fun, X, y_true, n_samples::Int = 10000; warns = true)
     scores = ascore_fun(X)
-    threshold = threshold_at_fpr(scores, y_true, fpr; warn = true)
+    threshold = threshold_at_fpr(scores, y_true, fpr; warns = warns)
     if threshold == NaN
         return NaN
     end
@@ -558,8 +558,8 @@ end
 
 Compute f1 score given a false positive value and score and true label vectors.
 """
-function f1_at_fpr(scores, y_true, fpr)
-    t = threshold_at_fpr(scores, y_true, fpr)
+function f1_at_fpr(scores, y_true, fpr; warns=true)
+    t = threshold_at_fpr(scores, y_true, fpr, warns=warns)
     return f1_at_threshold(scores, y_true, t)
 end
 
