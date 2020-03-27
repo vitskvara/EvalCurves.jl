@@ -126,7 +126,7 @@ end
 
 Computes the area under curve (x,y).
 """
-function auc(x,y, weights = "same")
+function auc(x,y,weights = "same")
     # compute the increments
     dx = x[2:end] - x[1:end-1]
     dy = y[2:end] - y[1:end-1]
@@ -148,6 +148,9 @@ function auc(x,y, weights = "same")
         a = (y[1:end-1] + dy/2)[inz]
         a = a.*w
         b = dx[inz]
+    elseif typeof(weights) <: Vector
+        a = (y[1:end-1] + dy/2).*weights
+        b = dx
     end
 
     return abs(dot(a,b))
@@ -156,25 +159,38 @@ end
 auc(x::Tuple, weights = "same") = auc(x..., weights)
 
 """
+    partial_auc(x,y,pr,[pl=0;weights="same",normalize=false])
+
+Compute the integral under (`x`,`y`) where `x ∈ [max(x)*pl, max(x)*pr]`.
+The boundary points `pr`,`pl` are expected to be in the interval [0,1].
+"""
+function partial_auc(x,y,pr,pl=0;weights="same",normalize=false)
+    @assert 0.0 <= pr <= 1.0
+    @assert 0.0 <= pl <= 1.0
+    # get the x up to which we integrate
+    pxr = maximum(x)*pr + minimum(x)*(1-pr)
+    pxl = maximum(x)*pl + minimum(x)*(1-pl)
+    # now, this is done so that the resulting (_x,_y)
+    # under which is integrated ends correctly,
+    # otherwise integrals will not sum up as part will be ommited
+    inds = pxl.<= x.<=pxr
+    pyr = tpr_at_fpr(x,y,pxr)
+    pyl = tpr_at_fpr(x,y,pxl)
+    # contruct the correct (_x,_y) and compute the new integral
+    # the outer points are added so that the integral is properly
+    # interpolated
+    _x = vcat([pxl],x[inds],[pxr])
+    _y = vcat([pyl],y[inds],[pyr])
+    normalize ? (return auc(_x,_y,weights)/(pr-pl)) : (return auc(_x,_y,weights))
+end
+
+"""
     auc_at_p(x,y,p,[weights,normalize])
 
 Compute the left 100*p% of the integral under (x,y).
 """
-function auc_at_p(x,y,p,weights="same";normalize=false)
-    @assert 0.0 <= p <= 1.0
-    # get the x up to which we integrate
-    px = maximum(x)*p + minimum(x)*(1-p)
-    # now, this is done so that the resulting (_x,_y)
-    # under which is integrated ends correctly,
-    # otherwise integrals will not sum up as part will be ommited
-    inds = x.<=px
-    py = tpr_at_fpr(x,y,px)
-    # contruct the correct (_x,_y) and compute the new integral
-    _x = push!(x[inds],px)
-    _y = push!(y[inds],py)
-    normalize ? (return auc(_x,_y,weights)/p) : (return auc(_x,_y,weights))
-end
-
+auc_at_p(x,y,p,weights="same";normalize=false) = partial_auc(x,y,p,0.0,weights=weights,normalize=normalize)
+    
 """
     plotroc(args...)
 
@@ -389,11 +405,12 @@ true positive rate and false positive rate vectors (ROC curve).
 """
 function tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real)
     @assert 0 <= p <= 1
+    (p == 1) ? (return tpr[end]) : nothing
     # find the place where p fals between two points at fpr
     inds = fpr.<=p
+    # now interpolate for tpr
     lefti = sum(inds)
     righti = lefti + 1
-    # now interpolate for tpr
     ratio = (p - fpr[lefti])/(fpr[righti] - fpr[lefti])
     return tpr[righti]*ratio + tpr[lefti]*(1-ratio)
 end

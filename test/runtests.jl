@@ -19,11 +19,27 @@ N = size(labels,1)
 	caauroc = EvalCurves.auc(fprvec, tprvec, "centered")
 	@test round(caauroc; digits = 4)==1.3524
 	
-	# auc_at_p test
+	# partial auc test
+	n = 200
+	s = rand(n)
+	y = rand([0,1], n)
+	roc = roccurve(s, y)
+	prs = [0.1, 0.24, 0.5, 0.8, 1.0]
+	paucs = map(x->EvalCurves.partial_auc(roc..., x), prs)
+	@test paucs[end] == auc(roc...)
+	pls = [0.0, 0.1, 0.24, 0.5, 0.8]
+	paucs = map(x->EvalCurves.partial_auc(roc..., x[1], x[2]), zip(prs, pls))
+	@test sum(paucs) ≈ auc(roc...)
+
+	# simpler test
 	tpr = [0.0, 0.2, 0.2, 0.25, 0.25, 1.0, 1.0, 1.0, 1.0]
 	fpr = [0.0, 0.0, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
 	auroc = EvalCurves.auc(fpr, tpr)
-	@test ((EvalCurves.auc_at_p(fpr,tpr,0.8) + 0.2) - auroc) < 1e-64
+	@test abs((EvalCurves.partial_auc(fpr,tpr,0.8) + 0.2) - auroc) < 1e-64
+	@test abs(0.04 + EvalCurves.partial_auc(fpr,tpr,0.8,0.2) + 0.2 - auroc) < 1e-64
+
+	# auc_at_p test
+	@test abs((EvalCurves.auc_at_p(fpr,tpr,0.8) + 0.2) - auroc) < 1e-64
 
 	# binarize
 	@test EvalCurves.binarize([-1,-1,1,1,-1]) == [0,0,1,1,0]
@@ -63,6 +79,7 @@ N = size(labels,1)
 	tpr = sqrt.((collect(0:10)/10))
 	p=0.05
 	@test EvalCurves.tpr_at_fpr(fpr, tpr, p) == (tpr[1]+tpr[2])/2
+	@test EvalCurves.tpr_at_fpr(fpr, tpr, 1.0) == tpr[end]
 	# threshold@fpr
 	score = collect(1:10)/10
 	y_true = [0,0,0,0,0,1,1,1,1,1]
