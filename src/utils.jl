@@ -579,4 +579,3 @@ function f1_at_fpr(scores, y_true, fpr; warns=true)
     t = threshold_at_fpr(scores, y_true, fpr, warns=warns)
     return f1_at_threshold(scores, y_true, t)
 end
-
