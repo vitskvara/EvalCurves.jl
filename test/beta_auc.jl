@@ -1,6 +1,6 @@
 @testset "βAUC" begin
-	using EvalCurves
-	using Test, Statistics
+	Random.seed!(123456) # so the test are not totaly unpredictable
+	
 	n = 1000
 	scores = rand(n)
 	y_true = rand([0,1], n)
@@ -34,9 +34,25 @@
 		@test abs(bauc - fpr) < 0.1
 	end
 
+	# if the roc is flat somewhere, the weighing by beta pdf should produce the same value as tpr@
+	x = [0.0, 0.2, 0.2, 0.25, 0.25, 0.5, 0.5, 0.7, 0.9, 1.0]
+	y = [0.0, 0.0, 0.25, 0.375, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0]
+	fpr = 0.8
+	fprs = EvalCurves.fpr_distribution(scores, y_true, fpr, ns)
+	α, β = EvalCurves.estimate_beta_params(fprs)   
+	# this is from beta_auc
+	roci = EvalCurves.linear_interpolation(x,y, n=1001)
+	dx = (roci[1][2] - roci[1][1])/2
+	xw = roci[1][1:end-1] .+ dx
+	w = exp.(EvalCurves.beta_logpdf.(xw, α, β))
+	@test auc(roci..., w) ≈ EvalCurves.tpr_at_fpr(x,y,fpr) ≈ 1.0
+
+	# linterp
 	roc = roccurve(scores, y_true)
 	interp_len = max(1001, length(roc[1]))
 	roci = EvalCurves.linear_interpolation(roc..., n=interp_len)
 	@test length(roci[1]) == length(roci[2]) == interp_len
 	@test abs(auc(roc) - auc(roci)) < 0.001
+
+	Random.seed!() # restart it again
 end
