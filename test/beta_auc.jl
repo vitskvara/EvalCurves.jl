@@ -26,12 +26,23 @@
 	@test exp(EvalCurves.beta_logpdf(0.5, 2, 1)) == 0.5*2
 	@test exp(EvalCurves.beta_logpdf(0.2, 3, 2)) == 0.2^2*0.8*24/2
 
+	# localized auc works the same way as βAUC, but the weights are uniform
+	# between the minimum and maximum of the histogram
+	fpr = 0.5
+	lauc = EvalCurves.localized_auc(scores, y_true, fpr, ns)
+	laucn = EvalCurves.localized_auc(scores, y_true, fpr, ns, normalize=true)
+	@test lauc<laucn
+	for fpr in 0:0.1:1.0
+		lauc = EvalCurves.localized_auc(scores, y_true, fpr, ns, normalize=true)
+		@test abs(lauc - fpr) < 0.05
+	end
+
 	# βAUC
 	# since the score is random, roc is almost a diagonal and βAUC = fpr
 	# but this stops working for fpr = 1.0
 	for fpr in 0:0.1:0.9
 		bauc = EvalCurves.beta_auc(scores, y_true, fpr, ns)
-		@test abs(bauc - fpr) < 0.1
+		@test abs(bauc - fpr) < 0.05
 	end
 
 	# if the roc is flat somewhere, the weighing by beta pdf should produce the same value as tpr@

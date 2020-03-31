@@ -23,6 +23,31 @@ function fpr_distribution(scores::Vector, y_true::Vector, fpr::Real, nsamples::I
 end
 
 """
+    localized_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int[; d::Real=0.5,
+        normalize=false])
+
+A localized AUC. Samples the distribution of false positive rate values around given `fpr`. Then
+integrates the ROC curve only between found minimum and maximum value.
+
+# Arguments
+* `scores`: A numerical vector of sample scores, higher value indicates higher
+probability of belonginig to the positive class
+* `y_true`: True binary labels
+* `fpr`: Value of FPR of interest
+* `nsamples`: Number of FPR samples to be fitted
+* `d`: A ratio of the size of the resampling set from which the distribution samples are drawn from
+* `normalize`: Normalize the output?
+
+"""
+function localized_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::Real=0.5, 
+    normalize=false)
+    # first sample fprs and get parameters of the beta distribution
+    fprs = fpr_distribution(scores, y_true, fpr, nsamples, d)
+    roc = roccurve(scores, y_true)
+    partial_auc(roc..., maximum(fprs), minimum(fprs), normalize=normalize)
+end
+
+"""
     estimate_beta_params(x::Vector)
 
 Given a set of samples `x`, estimate the parameters of the one-dimensional Beta(α,β) distribution
