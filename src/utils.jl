@@ -468,6 +468,16 @@ function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warns = true)
 end
 
 """
+    fpr_at_threshold(scores::Vector, y_true::Vector, threshold::Real)
+
+Estimate the false positive rate at a given `threshold `.
+"""
+function fpr_at_threshold(scores::Vector, y_true::Vector, threshold::Real)
+    y_pred = predict_labels(scores, threshold)
+    false_positive_rate(y_true, y_pred)
+end
+
+"""
 	sample_volume(score_fun, threshold, bounds, samples::Int = 10000)
 
 Samples one volume of the decision space where classifier marks samples as normal.
