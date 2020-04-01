@@ -43,6 +43,10 @@ function localized_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int;
     normalize=false, warns=true)
     # first sample fprs and get parameters of the beta distribution
     fprs = fpr_distribution(scores, y_true, fpr, nsamples, d, warns=warns)
+    # filter out NaNs
+    fprs = fprs[.!isnan.(fprs)]
+    (length(fprs) == 0) ? (return NaN) : nothing
+    # now continue
     roc = roccurve(scores, y_true)
     partial_auc(roc..., maximum(fprs), minimum(fprs), normalize=normalize)
 end
@@ -90,6 +94,10 @@ probability of belonginig to the positive class
 function beta_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::Real=0.5, warns=true)
     # first sample fprs and get parameters of the beta distribution
     fprs = fpr_distribution(scores, y_true, fpr, nsamples, d, warns=warns)
+    # filter out NaNs
+    fprs = fprs[.!isnan.(fprs)]
+    (length(fprs) == 0) ? (return NaN) : nothing
+    # now continue
     α, β = estimate_beta_params(fprs)
 
     # compute roc

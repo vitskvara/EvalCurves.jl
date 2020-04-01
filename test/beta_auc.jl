@@ -1,5 +1,5 @@
 @testset "βAUC" begin
-	Random.seed!(123456) # so the test are not totaly unpredictable
+	Random.seed!(1234) # so the test are not totaly unpredictable
 	
 	n = 1000
 	scores = rand(n)
@@ -9,11 +9,14 @@
 	ts = map(i->EvalCurves.threshold_at_fpr_sample(scores, y_true, fpr, d), 1:10)
 	# test that they are not all the same
 	@test !all(ts.==ts[1])
+	@test isnan(EvalCurves.threshold_at_fpr_sample(scores, y_true, NaN, d))
 	
 	ns = 1000
 	fprs = EvalCurves.fpr_distribution(scores, y_true, fpr, ns)
 	@test length(fprs) == ns
 	@test abs(fpr - mean(fprs)) < 0.01
+	fprs = EvalCurves.fpr_distribution(scores, y_true, 0.001, ns; warns=false)
+	@test any(isnan.(fprs))
 
 	# this is based on the fact that beta(1,1) is uniform distribution
 	x = rand(10000)
@@ -36,7 +39,7 @@
 		lauc = EvalCurves.localized_auc(scores, y_true, fpr, ns, normalize=true)
 		@test abs(lauc - fpr) < 0.05
 	end
-
+	
 	# βAUC
 	# since the score is random, roc is almost a diagonal and βAUC = fpr
 	# but this stops working for fpr = 1.0

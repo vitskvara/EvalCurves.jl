@@ -423,6 +423,7 @@ that the resulting fpr is as close as possible to p while (p <= fpr)
 - this is important to note especially on small datasets.
 """
 function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warns = true)
+    isnan(fpr) ? (return NaN) : nothing
     N = length(scores)
     @assert N == length(y_true)
     @assert 0.0 <= fpr <= 1.0
@@ -446,6 +447,7 @@ function threshold_at_fpr(scores::Vector, y_true, fpr::Real; warns = true)
 
     thresholds = scores[thresholdidx]
 
+    # if the lowest scoring sample is positive, it always returns a value
     ids = fpr .>= fps
     lastsmaller = sum(ids)
     if lastsmaller == 0
@@ -473,6 +475,7 @@ end
 Estimate the false positive rate at a given `threshold `.
 """
 function fpr_at_threshold(scores::Vector, y_true::Vector, threshold::Real)
+    isnan(threshold) ? (return NaN) : nothing
     y_pred = predict_labels(scores, threshold)
     false_positive_rate(y_true, y_pred)
 end

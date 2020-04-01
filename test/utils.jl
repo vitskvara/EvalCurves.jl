@@ -79,6 +79,7 @@ N = size(labels,1)
 	y_true = [0,0,0,0,0,1,1,1,1,1]
 	fpr=0.3
 	@test EvalCurves.threshold_at_fpr(score, y_true, fpr) == 0.45
+	@test isnan(EvalCurves.threshold_at_fpr(score, y_true, NaN))
 	# volume estimates		
 	Random.seed!(1234)
 	X = randn(2,1000)
