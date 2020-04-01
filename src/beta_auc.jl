@@ -1,24 +1,24 @@
 """
-    threshold_at_fpr_sample(scores::Vector, y_true::Vector, fpr::Real, d::Real)
+    threshold_at_fpr_sample(scores::Vector, y_true::Vector, fpr::Real, d::Real[; warns=true])
 
 Subsample the input `scores` to obtain a random threshold value for a given `fpr` value.
 Argument `d` is the relative number of the subsampled scores.
 """
-function threshold_at_fpr_sample(scores::Vector, y_true::Vector, fpr::Real, d::Real)
+function threshold_at_fpr_sample(scores::Vector, y_true::Vector, fpr::Real, d::Real; warns=true)
     @assert 0 <= d <= 1
     n = length(y_true)
     nn = floor(Int, d*n)
     sample_inds = StatsBase.sample(1:n, nn, replace=false)
-    threshold_at_fpr(scores[sample_inds], y_true[sample_inds], fpr)
+    threshold_at_fpr(scores[sample_inds], y_true[sample_inds], fpr, warns=warns)
 end
 
 """
-    fpr_distribution(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int, d::Real=0.5)
+    fpr_distribution(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int, d::Real=0.5[; warns=true])
 
 Computes the distribution of false positive rates around given `fpr`.
 """
-function fpr_distribution(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int, d::Real=0.5)
-    thresholds = map(i->threshold_at_fpr_sample(scores, y_true, fpr, d), 1:nsamples)
+function fpr_distribution(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int, d::Real=0.5; warns=true)
+    thresholds = map(i->threshold_at_fpr_sample(scores, y_true, fpr, d; warns=warns), 1:nsamples)
     fprs = map(x->fpr_at_threshold(scores, y_true, x), thresholds)
 end
 
@@ -40,9 +40,9 @@ probability of belonginig to the positive class
 
 """
 function localized_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::Real=0.5, 
-    normalize=false)
+    normalize=false, warns=true)
     # first sample fprs and get parameters of the beta distribution
-    fprs = fpr_distribution(scores, y_true, fpr, nsamples, d)
+    fprs = fpr_distribution(scores, y_true, fpr, nsamples, d, warns=warns)
     roc = roccurve(scores, y_true)
     partial_auc(roc..., maximum(fprs), minimum(fprs), normalize=normalize)
 end
@@ -87,9 +87,9 @@ probability of belonginig to the positive class
 * `d`: A ratio of the size of the resampling set from which the distribution samples are drawn from
 
 """
-function beta_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::Real=0.5)
+function beta_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::Real=0.5, warns=true)
     # first sample fprs and get parameters of the beta distribution
-    fprs = fpr_distribution(scores, y_true, fpr, nsamples, d)
+    fprs = fpr_distribution(scores, y_true, fpr, nsamples, d, warns=warns)
     α, β = estimate_beta_params(fprs)
 
     # compute roc
