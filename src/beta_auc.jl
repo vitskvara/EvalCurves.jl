@@ -43,9 +43,17 @@ function localized_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int;
     normalize=false, warns=true)
     # first sample fprs and get parameters of the beta distribution
     fprs = fpr_distribution(scores, y_true, fpr, nsamples, d, warns=warns)
+    
     # filter out NaNs
     fprs = fprs[.!isnan.(fprs)]
     (length(fprs) == 0) ? (return NaN) : nothing
+
+    # check consistency
+    if !_check_sampled_fpr_consistency(fpr, fprs)
+        warns ? (@warn "the requested fpr is out of the sampled fpr distribution, returning NaN") : nothing
+        return NaN
+    end
+
     # now continue
     roc = roccurve(scores, y_true)
     partial_auc(roc..., maximum(fprs), minimum(fprs), normalize=normalize)
@@ -97,6 +105,13 @@ function beta_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::R
     # filter out NaNs
     fprs = fprs[.!isnan.(fprs)]
     (length(fprs) == 0) ? (return NaN) : nothing
+
+    # check for consistency
+    if !_check_sampled_fpr_consistency(fpr, fprs)
+        warns ? (@warn "the requested fpr is out of the sampled fpr distribution, returning NaN") : nothing
+        return NaN
+    end
+
     # now continue
     α, β = estimate_beta_params(fprs)
 
@@ -114,6 +129,11 @@ function beta_auc(scores::Vector, y_true::Vector, fpr::Real, nsamples::Int; d::R
     wauroc = auc(roci..., w)
 end
 
+function _check_sampled_fpr_consistency(fpr, fprs)
+    # test whether the fprs actually make any sense by a 3sigma test
+    m, s2 = mean_and_var(fprs)
+    return (m-3*sqrt(s2) < fpr < m+3*sqrt(s2))
+end
 """
     linear_interpolation(x::Vector,y::Vector;n=nothing,dx=nothing)
 
