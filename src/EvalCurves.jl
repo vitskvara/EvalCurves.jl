@@ -7,5 +7,6 @@ export roccurve, auc, auc_at_p, tpr_at_fpr, prcurve, partial_auc
 
 include("utils.jl")
 include("beta_auc.jl")
+include("np_score.jl")
 
 end

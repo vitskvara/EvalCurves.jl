@@ -8,3 +8,4 @@ using Random
 
 include("utils.jl")
 include("beta_auc.jl")
+include("np_score.jl")
