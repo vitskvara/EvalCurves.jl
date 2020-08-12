@@ -398,22 +398,36 @@ function precision_at_k(score, y_true, k::Int)
 end
 
 """
+    _interpolate_xy(x::Vector, y::Vector, p::Real)
+
+Returns y value that corresponds to the interpolation of x with p. Assumes that 0 = < x,y,p <= 1.
+"""
+function _interpolate_xy(x::Vector, y::Vector, p::Real)
+    @assert 0 <= p <= 1
+    (p == 1) ? (return y[end]) : nothing
+    # find the place where p fals between two points at fpr
+    inds = x.<=p
+    # now interpolate for tpr
+    lefti = sum(inds)
+    righti = lefti + 1
+    ratio = (p - x[lefti])/(x[righti] - x[lefti])
+    return y[righti]*ratio + y[lefti]*(1-ratio)
+end
+
+"""
     tpr_at_fpr(fpr, tpr, p)
 
 Return true positive rate @ p% false positive rate given
 true positive rate and false positive rate vectors (ROC curve).
 """
-function tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real)
-    @assert 0 <= p <= 1
-    (p == 1) ? (return tpr[end]) : nothing
-    # find the place where p fals between two points at fpr
-    inds = fpr.<=p
-    # now interpolate for tpr
-    lefti = sum(inds)
-    righti = lefti + 1
-    ratio = (p - fpr[lefti])/(fpr[righti] - fpr[lefti])
-    return tpr[righti]*ratio + tpr[lefti]*(1-ratio)
-end
+tpr_at_fpr(fpr::Vector, tpr::Vector, p::Real) = _interpolate_xy(fpr, tpr, p)
+
+"""
+    prec_at_rec(rec, prec, p)
+
+Return precision @ p% recall given precision and recall vectors (PR curve).
+"""
+prec_at_rec(rec::Vector, prec::Vector, p::Real) = _interpolate_xy(rec, prec, p)
 
 """
     threshold_at_fpr(scores, y_true, p[; warns])

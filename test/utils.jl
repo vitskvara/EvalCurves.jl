@@ -74,6 +74,15 @@ N = size(labels,1)
 	p=0.05
 	@test EvalCurves.tpr_at_fpr(fpr, tpr, p) == (tpr[1]+tpr[2])/2
 	@test EvalCurves.tpr_at_fpr(fpr, tpr, 1.0) == tpr[end]
+	
+	# prec@rec
+	s = [0.1, 0.4, 0.3, 0.5, 0.5, 0.6]
+	l = [0, 0, 1, 0, 0, 1]
+	rec, pr = EvalCurves.prcurve(s, l)
+	@test EvalCurves.prec_at_rec(rec, pr, 1) == pr[end]
+	@test EvalCurves.prec_at_rec(rec, pr, 0.5) == 0.25
+	@test EvalCurves.prec_at_rec(rec, pr, 0.75) == 0.325	
+	
 	# threshold@fpr
 	score = collect(1:10)/10
 	y_true = [0,0,0,0,0,1,1,1,1,1]
